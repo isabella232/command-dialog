@@ -38,6 +38,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
 import org.cytoscape.command.AvailableCommands;
 import org.cytoscape.command.CommandExecutorTaskFactory;
@@ -59,17 +62,22 @@ import org.cytoscape.work.util.ListSingleSelection;
 import org.ops4j.pax.logging.spi.PaxAppender;
 import org.ops4j.pax.logging.spi.PaxLevel;
 import org.ops4j.pax.logging.spi.PaxLoggingEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class CommandHandler implements PaxAppender, TaskObserver {
-	boolean processingCommand = false;
+public class CommandHandler extends Handler implements PaxAppender, TaskObserver {
+	
+	boolean processingCommand;
 	AvailableCommands availableCommands;
 	CommandExecutorTaskFactory commandExecutor;
-	MessageHandler resultsText = null;
-	SynchronousTaskManager taskManager = null;
+	MessageHandler resultsText;
+	SynchronousTaskManager<?> taskManager;
+	
+	private final static Logger logger = LoggerFactory.getLogger(CommandHandler.class);
 
 	public CommandHandler(AvailableCommands availableCommands, 
 	                      CommandExecutorTaskFactory commandExecutor,
-	                      SynchronousTaskManager taskManager) {
+	                      SynchronousTaskManager<?> taskManager) {
 		this.availableCommands = availableCommands;
 		this.commandExecutor = commandExecutor;
 		this.taskManager = taskManager;
@@ -97,7 +105,8 @@ public class CommandHandler implements PaxAppender, TaskObserver {
 				}
 			}
 		} catch (RuntimeException e) {
-			resultsText.appendError("  "+e.getMessage());
+			logger.error("Error handling command \"" + input + "\"", e);
+			resultsText.appendError("  " + e.getMessage());
 		}
 		resultsText.appendMessage("");
 	}
@@ -292,10 +301,19 @@ public class CommandHandler implements PaxAppender, TaskObserver {
 				message += arg;
 			}
 			message += "="+getTypeString(namespace, command, arg);
-			message += ": "+availableCommands.getArgDescription(namespace, command, arg);
+			message += ": "+normalizeArgDescription(availableCommands.getArgDescription(namespace, command, arg));
 			message += "</li>\n";
 		}
 		resultsText.appendMessage(message+"</ul>");
+	}
+
+	private String normalizeArgDescription(String s) {
+		if (s != null) {
+			s = s.trim();
+			if (s.endsWith(":")) s = s.substring(0, s.length() - 1);
+		}
+		
+		return s;
 	}
 
 	private String getTypeString(String namespace, String command, String arg) {
@@ -329,7 +347,10 @@ public class CommandHandler implements PaxAppender, TaskObserver {
 				for (int index = 0; index < list.size()-1; index++) { 
 					str += keyword(list.get(index).toString())+"|"; 
 				}
-				str += keyword(list.get(list.size()-1).toString())+")&gt;"; 
+				if (!list.isEmpty())
+					str += keyword(list.get(list.size()-1).toString()); 
+				str += ")&gt;";
+				
 				return fixedSpan(str);
 			}
 		} else if (clazz.equals(ListMultipleSelection.class)) {
@@ -340,7 +361,10 @@ public class CommandHandler implements PaxAppender, TaskObserver {
 				for (int index = 0; index < list.size()-1; index++) { 
 					str += keyword(list.get(index).toString())+","; 
 				}
-				str += keyword(list.get(list.size()-1).toString())+"]&gt;"; 
+				if (!list.isEmpty())
+					str += keyword(list.get(list.size()-1).toString());
+				str += "]&gt;";
+				
 				return fixedSpan(str);
 			}
 		} else if (clazz.equals(BoundedDouble.class) || clazz.equals(BoundedFloat.class) ||
@@ -428,5 +452,23 @@ public class CommandHandler implements PaxAppender, TaskObserver {
 		processingCommand = false;
 		resultsText.appendCommand(status.getType().toString());
 	}
-	
+
+	// Handler methods
+	public void close() {}
+	public void flush() {}
+
+	public void publish(final LogRecord record) {
+		if (record == null) {
+			return;
+		}
+
+		Level level = record.getLevel();
+
+		if (level.equals(Level.SEVERE))
+			resultsText.appendError(record.getMessage());
+		else if (level.equals(Level.WARNING))
+			resultsText.appendWarning(record.getMessage());
+		else if (level.equals(Level.INFO))
+			resultsText.appendMessage(record.getMessage());
+	}
 }

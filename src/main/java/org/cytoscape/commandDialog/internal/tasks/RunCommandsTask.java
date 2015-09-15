@@ -5,26 +5,24 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import org.cytoscape.work.AbstractTask;
-import org.cytoscape.work.ProvidesTitle;
-import org.cytoscape.work.TaskMonitor;
-import org.cytoscape.work.Tunable;
 
 import org.cytoscape.commandDialog.internal.handlers.CommandHandler;
 import org.cytoscape.commandDialog.internal.handlers.MessageHandler;
 import org.cytoscape.commandDialog.internal.ui.CommandToolDialog;
 import org.cytoscape.commandDialog.internal.ui.ConsoleCommandHandler;
+import org.cytoscape.work.AbstractTask;
+import org.cytoscape.work.ProvidesTitle;
+import org.cytoscape.work.TaskMonitor;
+import org.cytoscape.work.Tunable;
 
 public class RunCommandsTask extends AbstractTask {
+	
 	CommandToolDialog dialog;
 	CommandHandler handler;
 
 	@ProvidesTitle
-	public String getTitle() { return "Execute command file"; }
+	public String getTitle() { return "Execute Command File"; }
+	
 	@Tunable(description="Command File", params="input=true;fileCategory=unspecified")
 	public File file;
 	
@@ -65,7 +63,6 @@ public class RunCommandsTask extends AbstractTask {
 
 		if (dialog != null) {
 			// We have a GUI
-			dialog.pack();
 			dialog.setVisible(true);
 		}
 			

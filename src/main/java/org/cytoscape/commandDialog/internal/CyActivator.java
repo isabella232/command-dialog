@@ -13,6 +13,7 @@ import static org.cytoscape.work.ServiceProperties.TITLE;
 import java.io.File;
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
+import java.util.logging.LogManager;
 
 import org.cytoscape.commandDialog.internal.handlers.CommandHandler;
 import org.cytoscape.commandDialog.internal.tasks.CommandDialogTaskFactory;
@@ -27,6 +28,7 @@ import org.cytoscape.app.event.AppsFinishedStartingEvent;
 import org.cytoscape.app.event.AppsFinishedStartingListener;
 import org.cytoscape.application.swing.CySwingApplication;
 import org.cytoscape.application.CyShutdown;
+import org.cytoscape.application.CyUserLog;
 import org.cytoscape.command.AvailableCommands;
 import org.cytoscape.command.CommandExecutorTaskFactory;
 import org.cytoscape.property.CyProperty;
@@ -77,6 +79,9 @@ public class CyActivator extends AbstractCyActivator {
 		                ezProps("org.ops4j.pax.logging.appender.name", 
 		                        "TaskMonitorShowMessagesAppender"));
 
+		// And register ourselves as a listener for userlog handlers
+		LogManager.getLogManager().getLogger(CyUserLog.NAME).addHandler(commandHandler);
+
 		// Get any command line arguments.  The "-S" and "-R" are ours
 		CyProperty<Properties> commandLineProps = getService(bc, CyProperty.class, "(cyPropertyName=commandline.props)");
 		Properties p = commandLineProps.getProperties();
@@ -115,7 +120,7 @@ public class CyActivator extends AbstractCyActivator {
 		TaskFactory runCommand = new RunCommandsTaskFactory(dialog, commandHandler);
 		Properties runCommandProps = new Properties();
 		runCommandProps.setProperty(PREFERRED_MENU, "Tools");
-		runCommandProps.setProperty(TITLE, "Execute Command File");
+		runCommandProps.setProperty(TITLE, "Execute Command File...");
 		runCommandProps.setProperty(COMMAND, "run");
 		runCommandProps.setProperty(COMMAND_NAMESPACE, "command");
 		runCommandProps.setProperty(COMMAND_DESCRIPTION, "Run a series of commands from a file");
