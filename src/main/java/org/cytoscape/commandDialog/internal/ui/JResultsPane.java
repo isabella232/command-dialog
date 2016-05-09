@@ -32,7 +32,8 @@
  */
 package org.cytoscape.commandDialog.internal.ui;
 
-import java.awt.Color;
+import java.io.IOException;
+import java.io.Reader;
 
 import javax.swing.JDialog;
 import javax.swing.JPanel;
@@ -40,26 +41,20 @@ import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
-
-import javax.swing.text.AttributeSet;
-import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
-import javax.swing.text.DefaultStyledDocument;
-import javax.swing.text.SimpleAttributeSet;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
-import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.Element;
-
+import javax.swing.text.html.HTMLDocument;
+import javax.swing.text.html.HTMLEditorKit;
+import javax.swing.text.html.HTMLEditorKit.ParserCallback;
 
 import org.cytoscape.commandDialog.internal.handlers.MessageHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JResultsPane extends JTextPane implements MessageHandler {
-	// private SimpleAttributeSet commandAttributes;
-	// private SimpleAttributeSet messageAttributes;
-	// private SimpleAttributeSet resultAttributes;
-	// private SimpleAttributeSet errorAttributes;
-	// private SimpleAttributeSet warningAttributes;
+	private static final long serialVersionUID = 5891537236297794535L;
+	private final static Logger logger = LoggerFactory.getLogger(JResultsPane.class);
+	
 	private String commandAttributes;
 	private String messageAttributes;
 	private String resultAttributes;
@@ -129,8 +124,12 @@ public class JResultsPane extends JTextPane implements MessageHandler {
 		this.scrollPane = scrollPane;
 	}
 
+	/**
+	 * Recreate new Document, set it to the current JResultsPane and reset the rootElement
+	 * to be used while inserting HTML Element
+	 */
 	public void clear() {
-		currentDocument = new HTMLDocument();
+		currentDocument = (HTMLDocument) new HTMLEditorKit().createDefaultDocument();
 		setStyledDocument(currentDocument);
 		rootElement = currentDocument.getDefaultRootElement();
 	}
@@ -157,8 +156,10 @@ public class JResultsPane extends JTextPane implements MessageHandler {
 			paintImmediately(getBounds());
 			parentDialog.revalidate();
 			dataPanel.paintImmediately(dataPanel.getBounds());
-		} catch (Exception badLocationException) {
+		} catch (Exception e) {
+			logger.error("Unable to update command result in the dialog.", e);
 		}
+		
 		JScrollBar verticalScrollBar = scrollPane.getVerticalScrollBar();
 		verticalScrollBar.setValue(verticalScrollBar.getMaximum());
 	}

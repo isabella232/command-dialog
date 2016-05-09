@@ -37,6 +37,7 @@ import static javax.swing.GroupLayout.PREFERRED_SIZE;
 
 import java.awt.Dimension;
 import java.awt.Frame;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -173,7 +174,6 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 		setContentPane(dataPanel);
 		setMaximumSize(new Dimension(1000, 1000));
 		LookAndFeelUtil.setDefaultOkCancelKeyStrokes(getRootPane(), null, doneButton.getAction());
-		
 		pack();
 	}
 
@@ -201,7 +201,8 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 		}
 	}
 
-	class LineAction extends AbstractAction {
+	private class LineAction extends AbstractAction {
+		private static final long serialVersionUID = 6310319332662410418L;
 		
 		String action = null;
 		
@@ -212,9 +213,7 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 			
 		public void actionPerformed(ActionEvent e) {
 			if (commandList.size() == 0) return;
-
-			// System.out.println("in: size = "+commandList.size()+", index = "+commandIndex);
-
+			
 			if (action.equals("next")) {
 				commandIndex++;
 			} else if (action.equals("previous")) {
@@ -233,8 +232,6 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 			} else {
 				inputCommand = commandList.get(commandIndex);
 			}
-
-			// System.out.println("out: size = "+commandList.size()+", index = "+commandIndex);
 			inputField.setText(inputCommand);
 			inputField.selectAll();
 		}
