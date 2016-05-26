@@ -58,21 +58,20 @@ public class RunCommandsTask extends AbstractTask {
 
 	public void executeCommandScript(CommandToolDialog dialog, ConsoleCommandHandler consoleHandler) 
 	       throws FileNotFoundException, IOException {
-		BufferedReader reader;
-		reader = new BufferedReader(new FileReader(file));
-
 		if (dialog != null) {
 			// We have a GUI
 			dialog.setVisible(true);
 		}
-			
-		String line;
-		while ((line = reader.readLine()) != null) {
-			if (dialog != null) {
-				dialog.executeCommand(line);
-			} else {
-				consoleHandler.appendCommand(line);
-				handler.handleCommand((MessageHandler) consoleHandler, line);
+		
+		try (BufferedReader reader = new BufferedReader(new FileReader(file))){
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+				if (dialog != null) {
+					dialog.executeCommand(line);
+				} else {
+					consoleHandler.appendCommand(line);
+					handler.handleCommand((MessageHandler) consoleHandler, line);
+				}
 			}
 		}
 	}

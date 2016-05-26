@@ -32,9 +32,13 @@
  */
 package org.cytoscape.commandDialog.internal.handlers;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.StreamTokenizer;
 import java.io.StringReader;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -124,60 +128,83 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 	}
 
 	private void handleCommand(String inputLine, String ns) {
-		String sub = null;
-
 		// Parse the input, breaking up the tokens into appropriate
 		// commands, subcommands, and maps
-		Map<String,Object> settings = new HashMap<String, Object>();
-		String comm = parseInput(inputLine.substring(ns.length()).trim(), settings);
-
-		for (String command: availableCommands.getCommands(ns)) {
-			if (command.toLowerCase().equals(comm.toLowerCase())) {
-				sub = command;
-				break;
-			}
-		}
-
-		if (sub == null && (comm != null && comm.length() > 0))
-			throw new RuntimeException("Failed to find command: '" + comm +"' (from namespace: " + ns + ")");
+		Map<String,Object> userArguments = new HashMap<String, Object>(); 
+		String command = parseInput(inputLine.substring(ns.length()).trim(), userArguments);
+		validateCommand(command, ns);
+		List<String> validArgumentNames = availableCommands.getArguments(ns, command);
+		validateCommandArguments(command, ns, validArgumentNames, userArguments);
+		String intermediateFile = preprocessCommandFileIfRequired(command, userArguments);
 		
-		Map<String, Object> modifiedSettings = new HashMap<String, Object>();
-		// Now check the arguments
-		List<String> argList = availableCommands.getArguments(ns,  sub);
-		for (String inputArg: settings.keySet()) {
-			boolean found = false;
-			for (String arg: argList) {
-				if (arg.equalsIgnoreCase(inputArg)) {
-					found = true;
-					modifiedSettings.put(arg, settings.get(inputArg));
-					break;
-				}
-			}
-			if (!found)
-				throw new RuntimeException("Error: argument '"+inputArg+" isn't applicable to command: '"+ns+" "+comm+"'");
-		}
-
 		// Now we have all of the possible arguments and the arguments that the user
 		// has provided.  Check to make sure all required arguments are available
-		for (String arg: argList) {
-			if (availableCommands.getArgRequired(ns, sub, arg) &&
-			    !modifiedSettings.containsKey(arg))
-				throw new RuntimeException("Error: argument '"+arg+"' is required for command: '"+ns+" "+comm+"'");
+		for (String arg: validArgumentNames) {
+			if (availableCommands.getArgRequired(ns, command, arg) &&
+			    !userArguments.containsKey(arg))
+				throw new RuntimeException("Error: argument '"+arg+"' is required for command: '"+ns+" "+command+"'");
 		}
 		
 		processingCommand = true;
-		/*
-		System.out.println("Settings: ");
-		for (String key: settings.keySet()) {
-			System.out.println("   "+key+"="+settings.get(key));
+		try {
+			taskManager.execute(commandExecutor.createTaskIterator(ns, command, userArguments, this), this);			
+		} finally {
+			if(intermediateFile != null) {
+				removeIntermediateFile(intermediateFile);
+			}
 		}
-		*/
-		// CyCommandManager.execute(ns, sub, settings);
-		taskManager.execute(
-			commandExecutor.createTaskIterator(ns, sub, modifiedSettings, this), 
-		  this);
 	}
 
+	private void validateCommandArguments(String command, String ns, List<String> validArgumentNames, Map<String, Object> userArguments) {
+		for(String userArg : userArguments.keySet()) {
+			boolean found = false;
+			for (String validArg: validArgumentNames) {
+				if (command.equalsIgnoreCase("run") || userArg.equalsIgnoreCase(validArg)) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				throw new RuntimeException("Error: argument '" + userArg + " isn't applicable to command: '" + ns + " " + command +"'");
+			}				
+		}		
+	}
+
+	private void validateCommand(String command, String namespace) {
+		if(command ==  null || command.isEmpty()) {
+			throw new RuntimeException("Command can not be empty.");
+		}
+		
+		String sub = (availableCommands.getCommands(namespace).contains(command.toLowerCase())) ? command : null;
+
+		if (sub == null && (command != null && command.length() > 0))
+			throw new RuntimeException("Failed to find command: '" + command + "' (from namespace: " + namespace + ")");
+	}
+	
+	private String preprocessCommandFileIfRequired(String command, Map<String, Object> userArguments) {
+		if(command.equalsIgnoreCase("run")) {
+			try {
+				String outputFilePath = CommandScriptPreprocessor.preprocess(userArguments);
+				
+				// use the intermediate pre-processed file generated in the previous step
+				userArguments.put("file", outputFilePath);
+				return outputFilePath;
+			} catch (Exception e) {
+				logger.error("Could not pre-process user script.", e);
+			}
+		}	
+		return null;
+	}
+	
+	private void removeIntermediateFile(String filePath) {
+		File file = new File(filePath);
+		try {
+			Files.deleteIfExists(file.toPath());
+		} catch (IOException e) {
+			logger.error("Could not remove intermediate file. ", e);
+		}
+	}
+	
 	private String parseInput(String input, Map<String,Object> settings) {
 		
 		// Tokenize
