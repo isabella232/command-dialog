@@ -32,13 +32,9 @@
  */
 package org.cytoscape.commandDialog.internal.handlers;
 
-import java.io.File;
-import java.io.IOException;
 import java.io.StreamTokenizer;
 import java.io.StringReader;
-import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -135,7 +131,6 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 		validateCommand(command, ns);
 		List<String> validArgumentNames = availableCommands.getArguments(ns, command);
 		validateCommandArguments(command, ns, validArgumentNames, userArguments);
-		String intermediateFile = preprocessCommandFileIfRequired(command, userArguments);
 		
 		// Now we have all of the possible arguments and the arguments that the user
 		// has provided.  Check to make sure all required arguments are available
@@ -146,20 +141,14 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 		}
 		
 		processingCommand = true;
-		try {
-			taskManager.execute(commandExecutor.createTaskIterator(ns, command, userArguments, this), this);			
-		} finally {
-			if(intermediateFile != null) {
-				removeIntermediateFile(intermediateFile);
-			}
-		}
+		taskManager.execute(commandExecutor.createTaskIterator(ns, command, userArguments, this), this);	
 	}
 
 	private void validateCommandArguments(String command, String ns, List<String> validArgumentNames, Map<String, Object> userArguments) {
 		for(String userArg : userArguments.keySet()) {
 			boolean found = false;
-			for (String validArg: validArgumentNames) {
-				if (command.equalsIgnoreCase("run") || userArg.equalsIgnoreCase(validArg)) {
+			for (String validArg : validArgumentNames) {
+				if (userArg.equalsIgnoreCase(validArg)) {
 					found = true;
 					break;
 				}
@@ -179,30 +168,6 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 
 		if (sub == null && (command != null && command.length() > 0))
 			throw new RuntimeException("Failed to find command: '" + command + "' (from namespace: " + namespace + ")");
-	}
-	
-	private String preprocessCommandFileIfRequired(String command, Map<String, Object> userArguments) {
-		if(command.equalsIgnoreCase("run")) {
-			try {
-				String outputFilePath = CommandScriptPreprocessor.preprocess(userArguments);
-				
-				// use the intermediate pre-processed file generated in the previous step
-				userArguments.put("file", outputFilePath);
-				return outputFilePath;
-			} catch (Exception e) {
-				logger.error("Could not pre-process user script.", e);
-			}
-		}	
-		return null;
-	}
-	
-	private void removeIntermediateFile(String filePath) {
-		File file = new File(filePath);
-		try {
-			Files.deleteIfExists(file.toPath());
-		} catch (IOException e) {
-			logger.error("Could not remove intermediate file. ", e);
-		}
 	}
 	
 	private String parseInput(String input, Map<String,Object> settings) {
