@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.cytoscape.commandDialog.internal.handlers.CommandHandler;
 import org.cytoscape.commandDialog.internal.handlers.CommandScriptPreprocessor;
+import org.cytoscape.commandDialog.internal.handlers.CommandScriptPreprocessor.CommandType;
 import org.cytoscape.commandDialog.internal.handlers.MessageHandler;
 import org.cytoscape.commandDialog.internal.ui.CommandToolDialog;
 import org.cytoscape.commandDialog.internal.ui.ConsoleCommandHandler;
@@ -75,17 +76,39 @@ public class RunCommandsTask extends AbstractTask {
 		}
 		
 		Map<String, String> userArguments = CommandScriptPreprocessor.constructUserArgumentMap(args);
+		
 		try (BufferedReader reader = new BufferedReader(new FileReader(file))){
-			String line = null;
-			while ((line = reader.readLine()) != null) {
-				String processedCommand = CommandScriptPreprocessor.preprocessSingleCommand(line, userArguments);
-				if (dialog != null) {
-					dialog.executeCommand(processedCommand);
+			String sourceCommand = null;
+			
+			// Read each line of command, pre-process it for variable substitution if required.
+			while ((sourceCommand = reader.readLine()) != null) {
+				// we need to separate commands which assigns values
+				if(CommandScriptPreprocessor.getCommandType(sourceCommand) == CommandType.ASSIGNMENT) {
+					handleAssignmentCommand(sourceCommand, userArguments, (MessageHandler)consoleHandler);
 				} else {
-					consoleHandler.appendCommand(processedCommand);
-					handler.handleCommand((MessageHandler) consoleHandler, processedCommand);
-				}
+					String processedCommand = CommandScriptPreprocessor.preprocessSingleCommand(sourceCommand, userArguments);
+					
+					if (dialog != null) {
+						dialog.executeCommand(processedCommand);
+					} else {
+						consoleHandler.appendCommand(processedCommand);
+						handler.handleCommand((MessageHandler) consoleHandler, processedCommand);
+					}
+				}				
 			}
+		}
+	}
+	
+	private void handleAssignmentCommand(String command, Map<String, String> userArguments, MessageHandler consoleHandler) {
+		Map<String, String> parsedCommand = CommandScriptPreprocessor.parseAssignmentCommand(command);
+		String variableName = parsedCommand.keySet().iterator().next();
+		String sourceCommand = parsedCommand.get(variableName);
+		String processedCommand = CommandScriptPreprocessor.preprocessSingleCommand(sourceCommand, userArguments);
+		
+		String result = handler.handleCommand(consoleHandler, processedCommand);
+		
+		if(result != null) {
+			userArguments.put(variableName, result);
 		}
 	}
 }

@@ -72,6 +72,7 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 	CommandExecutorTaskFactory commandExecutor;
 	MessageHandler resultsText;
 	SynchronousTaskManager<?> taskManager;
+	private String lastCommandResult;
 	
 	private final static Logger logger = LoggerFactory.getLogger(CommandHandler.class);
 
@@ -83,8 +84,9 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 		this.taskManager = taskManager;
 	}
 
-	public void handleCommand(MessageHandler resultsText, String input) {
-		if (input.length() == 0 || input.startsWith("#")) return;
+	public String handleCommand(MessageHandler resultsText, String input) {
+		if (input.length() == 0 || input.startsWith("#")) return null;
+		
 		this.resultsText = resultsText;
 
 		try {
@@ -108,7 +110,9 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 			logger.error("Error handling command \"" + input + "\"", e);
 			resultsText.appendError("  " + e.getMessage());
 		}
+		
 		resultsText.appendMessage("");
+		return lastCommandResult;
 	}
 
 	private String isNamespace(String input) {
@@ -141,7 +145,9 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 		}
 		
 		processingCommand = true;
-		taskManager.execute(commandExecutor.createTaskIterator(ns, command, userArguments, this), this);	
+		lastCommandResult = null;
+		
+		taskManager.execute(commandExecutor.createTaskIterator(ns, command, userArguments, this), this);
 	}
 
 	private void validateCommandArguments(String command, String ns, List<String> validArgumentNames, Map<String, Object> userArguments) {
@@ -434,10 +440,15 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 			resultsText.appendMessage(event.getMessage());
 	}
 
+	/**
+	 * Callback invoked by TFExecutor when the ObservableTask completes
+	 */
 	public void taskFinished(ObservableTask t) {
 		Object res = t.getResults(String.class);
-		if (res != null)
-			resultsText.appendResult(res.toString());
+		if (res != null) {
+			lastCommandResult = res.toString();
+			resultsText.appendResult(lastCommandResult);
+		}	
 	}
 
 	public void allFinished(FinishStatus status) {

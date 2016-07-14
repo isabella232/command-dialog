@@ -70,7 +70,10 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 	private JResultsPane resultsText;
 	private JTextField inputField;
 	private CommandHandler commandHandler;
-
+	
+	// Result of last command executed
+	private String lastCommandResult;
+	
 	public CommandToolDialog (final Frame parent, final CommandHandler commandHandler) {
 		super(parent, false);
 		commandList = new ArrayList<>();
@@ -185,6 +188,13 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 		commandHandler.handleCommand((MessageHandler) resultsText, command);
 	}
 
+	/**
+	 * External interface to run a single command and get the result.
+	 */
+	public String executeCommandAndReturnResult(String command) {
+		return commandHandler.handleCommand((MessageHandler) resultsText, command);
+	}
+	
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if ("clear".equals(e.getActionCommand())) {
