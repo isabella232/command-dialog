@@ -17,6 +17,8 @@ import java.util.logging.LogManager;
 
 import org.cytoscape.commandDialog.internal.handlers.CommandHandler;
 import org.cytoscape.commandDialog.internal.tasks.CommandDialogTaskFactory;
+import org.cytoscape.commandDialog.internal.tasks.EchoCommandTask;
+import org.cytoscape.commandDialog.internal.tasks.EchoCommandTaskFactory;
 import org.cytoscape.commandDialog.internal.tasks.PauseCommandTaskFactory;
 import org.cytoscape.commandDialog.internal.tasks.RunCommandsTaskFactory;
 import org.cytoscape.commandDialog.internal.tasks.RunCommandsTask;
@@ -147,6 +149,13 @@ public class CyActivator extends AbstractCyActivator {
 			                AppsFinishedStartingListener.class, new Properties());
 		}
 
+		// Echo command to display current value of a user defined variable 
+		TaskFactory echoCommand = new EchoCommandTaskFactory();
+		Properties echoCommandProperties = new Properties();
+		echoCommandProperties.setProperty(COMMAND_NAMESPACE, "command");
+		echoCommandProperties.setProperty(COMMAND_DESCRIPTION, "Prints the value of a variable");
+		echoCommandProperties.setProperty(COMMAND, "echo");
+		registerService(bc, echoCommand, TaskFactory.class, echoCommandProperties);
 	}
 
 	class StartScript implements AppsFinishedStartingListener {

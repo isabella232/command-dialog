@@ -46,6 +46,11 @@ import org.cytoscape.command.AvailableCommands;
 import org.cytoscape.command.CommandExecutorTaskFactory;
 import org.cytoscape.command.util.EdgeList;
 import org.cytoscape.command.util.NodeList;
+import org.cytoscape.commandDialog.internal.interpreter.AssignmentCommand;
+import org.cytoscape.commandDialog.internal.interpreter.Command;
+import org.cytoscape.commandDialog.internal.interpreter.CommandInterpreter;
+import org.cytoscape.commandDialog.internal.interpreter.CommandInterpreterException;
+import org.cytoscape.commandDialog.internal.interpreter.LoopCommand;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyTable;
 import org.cytoscape.work.FinishStatus;
@@ -86,35 +91,63 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 
 	public String handleCommand(MessageHandler resultsText, String input) {
 		if (input.length() == 0 || input.startsWith("#")) return null;
+		input = input.trim();
 		
+		// handle defined command types
 		this.resultsText = resultsText;
-
+		Command processedCommand = null;
+		
 		try {
-			// Handle our built-ins
-			if (input.startsWith("help")) {
-				getHelpReturn(input);
+			processedCommand = CommandInterpreter.get().getProcessedCommand(input);
+			if(processedCommand == null) return "";
+			
+			if(processedCommand instanceof LoopCommand) {
+				handleLoopCommand((LoopCommand)processedCommand, resultsText);
 			} else {
-				// processingCommand = true;
-				// taskManager.execute(commandExecutor.createTaskIterator(Collections.singletonList(input)));
-				// processingCommand = false;
-
-				String ns = null;
-	
-				if ((ns = isNamespace(input)) != null) {
-					handleCommand(input, ns);
+				String command = processedCommand.getProcessedCommand();
+				
+				// Handle our built-ins
+				if (command.startsWith("help")) {
+					getHelpReturn(command);
 				} else {
-					throw new RuntimeException("Failed to find command namespace: '"+input+"'");
+					// processingCommand = true;
+					// taskManager.execute(commandExecutor.createTaskIterator(Collections.singletonList(input)));
+					// processingCommand = false;
+
+					String ns = null;
+		
+					if ((ns = isNamespace(command)) != null) {
+						handleCommand(command, ns);
+					} else {
+						throw new RuntimeException("Failed to find command namespace: '" + command + "'");
+					}
+					
+					if(processedCommand instanceof AssignmentCommand) {
+						CommandInterpreter.get().addVariable(((AssignmentCommand) processedCommand).getTargetVariable(), lastCommandResult);
+					}
 				}
-			}
+			}			
 		} catch (RuntimeException e) {
 			logger.error("Error handling command \"" + input + "\"", e);
 			resultsText.appendError("  " + e.getMessage());
+		} catch (CommandInterpreterException ex) {
+			logger.error("Error handling command \"" + input + "\"", ex);
+			resultsText.appendError("  " + ex.getMessage());
 		}
 		
 		resultsText.appendMessage("");
 		return lastCommandResult;
 	}
 
+	private void handleLoopCommand(LoopCommand command, MessageHandler resultsText) {
+		int size = command.getLoopCommands().size();
+		List<String> commands = command.getLoopCommands();
+		
+		for(int i=0; i<command.getLoopCommands().size(); i++) {
+			handleCommand(resultsText, command.getLoopCommands().get(i));
+		}		
+	}
+	
 	private String isNamespace(String input) {
 		String namespace = null;
 		// Namespaces must always be single word

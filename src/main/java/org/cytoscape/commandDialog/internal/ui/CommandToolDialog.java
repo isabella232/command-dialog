@@ -37,7 +37,6 @@ import static javax.swing.GroupLayout.PREFERRED_SIZE;
 
 import java.awt.Dimension;
 import java.awt.Frame;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -70,9 +69,6 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 	private JResultsPane resultsText;
 	private JTextField inputField;
 	private CommandHandler commandHandler;
-	
-	// Result of last command executed
-	private String lastCommandResult;
 	
 	public CommandToolDialog (final Frame parent, final CommandHandler commandHandler) {
 		super(parent, false);

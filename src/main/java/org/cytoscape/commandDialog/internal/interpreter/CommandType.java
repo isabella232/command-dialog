@@ -1,0 +1,13 @@
+package org.cytoscape.commandDialog.internal.interpreter;
+
+public enum CommandType {
+	CYTOSCAPE_STATEMENT,
+	ASSIGNMENT,
+	IF_STATEMENT,
+	ELSE_STATEMENT,
+	END_IF_STATEMENT,
+	FOR_STATEMENT,
+	END_FOR_STATEMENT,
+	ARITHMETIC_STATEMENT,
+	LOGICAL_STATEMENT
+}
