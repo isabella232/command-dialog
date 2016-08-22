@@ -2,7 +2,9 @@
 
 ## Introduction
 
-This is a Cytoscape Core App for showing the Command Dialog.
+Cytoscape is a general purpose, open source software platform for complex network data integration, analysis and visualization. Cytoscape’s core implements generic network integration and visualization capabilities through its core apps and can be extended to suite specific use-cases by developing Cystoscape apps using its extensible plugin architecture.  
+
+While Cytoscape’s graphical user interface is very useful for interactive network data integration and visualization, it may not be the best choice for workflows with hundreds if not thousands of network data files. Cytoscape includes the commandTool app to provide a command-line interface to Cytoscape using the Commands API. Cytoscape apps can register commands using annotations, and these commands will then be available in commandTool. Users can execute commands (eg importing networks from file or importing tables) using Command Line Dialog and can see the result in the Reply Log. The commandTool can also execute scripts (each line is a set of commands) and provide help about command classes and namespaces using the Command API.
 
 
 ## How to build
