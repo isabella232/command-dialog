@@ -28,8 +28,8 @@ public class CommandInterpreter {
 	private boolean insideIfBlock = false;
 	private boolean insideForBlock = false;
 	
-	Pattern IF_STATEMENT_PATTERN = Pattern.compile("if(.+?)then", Pattern.CASE_INSENSITIVE);
-	Pattern FOR_STATEMENT_PATTERN = Pattern.compile("for(.+?)loop", Pattern.CASE_INSENSITIVE);
+	final static Pattern IF_STATEMENT_PATTERN = Pattern.compile("if(.+?)then", Pattern.CASE_INSENSITIVE);
+	final static Pattern WHILE_STATEMENT_PATTERN = Pattern.compile("while(.+?)loop", Pattern.CASE_INSENSITIVE);
 	
 	public enum CommandInterpreterState {
 		SEQUENTIAL_PROCESSING,
@@ -197,7 +197,7 @@ public class CommandInterpreter {
 			throw new CommandInterpreterException("Nesting not allowed.");
 		}
 		
-		Matcher matcher = FOR_STATEMENT_PATTERN.matcher(input);
+		Matcher matcher = WHILE_STATEMENT_PATTERN.matcher(input);
 		String condition = "";
 		try {
 			matcher.find();

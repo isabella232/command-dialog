@@ -56,6 +56,7 @@ import org.cytoscape.model.CyTable;
 import org.cytoscape.work.FinishStatus;
 import org.cytoscape.work.ObservableTask;
 import org.cytoscape.work.SynchronousTaskManager;
+import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.TaskObserver;
 import org.cytoscape.work.util.AbstractBounded;
 import org.cytoscape.work.util.BoundedDouble;
@@ -76,14 +77,14 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 	AvailableCommands availableCommands;
 	CommandExecutorTaskFactory commandExecutor;
 	MessageHandler resultsText;
-	SynchronousTaskManager<?> taskManager;
+	TaskManager taskManager; // Task Manager
 	private String lastCommandResult;
 	
 	private final static Logger logger = LoggerFactory.getLogger(CommandHandler.class);
 
 	public CommandHandler(AvailableCommands availableCommands, 
 	                      CommandExecutorTaskFactory commandExecutor,
-	                      SynchronousTaskManager<?> taskManager) {
+	                      TaskManager taskManager) {
 		this.availableCommands = availableCommands;
 		this.commandExecutor = commandExecutor;
 		this.taskManager = taskManager;

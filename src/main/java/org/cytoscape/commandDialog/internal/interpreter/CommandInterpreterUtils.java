@@ -20,8 +20,8 @@ public class CommandInterpreterUtils {
 	static final String IF_STATEMENT_PREFIX = "IF";
 	static final String ELSE_STATEMENT_PREFIX = "ELSE";
 	static final String ENDIF_STATEMENT_PREFIX = "END IF";
-	static final String FOR_STATEMENT_PREFIX = "FOR";
-	static final String ENDFOR_STATEMENT_PREFIX = "END FOR";
+	static final String WHILE_STATEMENT_PREFIX = "WHILE";
+	static final String ENDWHILE_STATEMENT_PREFIX = "END WHILE";
 	static final Pattern VARIABLE_EXTRACTION_PATTERN = Pattern.compile("\\$(\\w+)");
 	
 	public static CommandType getCommandType(String command) {
@@ -36,9 +36,9 @@ public class CommandInterpreterUtils {
 			return CommandType.ELSE_STATEMENT;
 		} else if (command.startsWith(ENDIF_STATEMENT_PREFIX)) {
 			return CommandType.END_IF_STATEMENT;
-		} else if (command.startsWith(FOR_STATEMENT_PREFIX)) {
+		} else if (command.startsWith(WHILE_STATEMENT_PREFIX)) {
 			return CommandType.FOR_STATEMENT;
-		} else if (command.startsWith(ENDFOR_STATEMENT_PREFIX)) {
+		} else if (command.startsWith(ENDWHILE_STATEMENT_PREFIX)) {
 			return CommandType.END_FOR_STATEMENT;
 		} else if (command.contains("+")) {
 			return CommandType.END_FOR_STATEMENT;
