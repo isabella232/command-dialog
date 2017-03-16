@@ -46,11 +46,17 @@ import org.cytoscape.command.AvailableCommands;
 import org.cytoscape.command.CommandExecutorTaskFactory;
 import org.cytoscape.command.util.EdgeList;
 import org.cytoscape.command.util.NodeList;
+import org.cytoscape.commandDialog.internal.interpreter.AssignmentCommand;
+import org.cytoscape.commandDialog.internal.interpreter.Command;
+import org.cytoscape.commandDialog.internal.interpreter.CommandInterpreter;
+import org.cytoscape.commandDialog.internal.interpreter.CommandInterpreterException;
+import org.cytoscape.commandDialog.internal.interpreter.LoopCommand;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyTable;
 import org.cytoscape.work.FinishStatus;
 import org.cytoscape.work.ObservableTask;
 import org.cytoscape.work.SynchronousTaskManager;
+import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.TaskObserver;
 import org.cytoscape.work.util.AbstractBounded;
 import org.cytoscape.work.util.BoundedDouble;
@@ -71,46 +77,78 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 	AvailableCommands availableCommands;
 	CommandExecutorTaskFactory commandExecutor;
 	MessageHandler resultsText;
-	SynchronousTaskManager<?> taskManager;
+	TaskManager taskManager; // Task Manager
+	private String lastCommandResult;
 	
 	private final static Logger logger = LoggerFactory.getLogger(CommandHandler.class);
 
 	public CommandHandler(AvailableCommands availableCommands, 
 	                      CommandExecutorTaskFactory commandExecutor,
-	                      SynchronousTaskManager<?> taskManager) {
+	                      TaskManager taskManager) {
 		this.availableCommands = availableCommands;
 		this.commandExecutor = commandExecutor;
 		this.taskManager = taskManager;
 	}
 
-	public void handleCommand(MessageHandler resultsText, String input) {
-		if (input.length() == 0 || input.startsWith("#")) return;
+	public String handleCommand(MessageHandler resultsText, String input) {
+		if (input.length() == 0 || input.startsWith("#")) return null;
+		input = input.trim();
+		
+		// handle defined command types
 		this.resultsText = resultsText;
-
+		Command processedCommand = null;
+		
 		try {
-			// Handle our built-ins
-			if (input.startsWith("help")) {
-				getHelpReturn(input);
+			processedCommand = CommandInterpreter.get().getProcessedCommand(input);
+			if(processedCommand == null) return "";
+			
+			if(processedCommand instanceof LoopCommand) {
+				handleLoopCommand((LoopCommand)processedCommand, resultsText);
 			} else {
-				// processingCommand = true;
-				// taskManager.execute(commandExecutor.createTaskIterator(Collections.singletonList(input)));
-				// processingCommand = false;
-
-				String ns = null;
-	
-				if ((ns = isNamespace(input)) != null) {
-					handleCommand(input, ns);
+				String command = processedCommand.getProcessedCommand();
+				
+				// Handle our built-ins
+				if (command.startsWith("help")) {
+					getHelpReturn(command);
 				} else {
-					throw new RuntimeException("Failed to find command namespace: '"+input+"'");
+					// processingCommand = true;
+					// taskManager.execute(commandExecutor.createTaskIterator(Collections.singletonList(input)));
+					// processingCommand = false;
+
+					String ns = null;
+		
+					if ((ns = isNamespace(command)) != null) {
+						handleCommand(command, ns);
+					} else {
+						throw new RuntimeException("Failed to find command namespace: '" + command + "'");
+					}
+					
+					if(processedCommand instanceof AssignmentCommand) {
+						CommandInterpreter.get().addVariable(((AssignmentCommand) processedCommand).getTargetVariable(), lastCommandResult);
+					}
 				}
-			}
+			}			
 		} catch (RuntimeException e) {
 			logger.error("Error handling command \"" + input + "\"", e);
 			resultsText.appendError("  " + e.getMessage());
+		} catch (CommandInterpreterException ex) {
+			logger.error("Error handling command \"" + input + "\"", ex);
+			resultsText.appendError("  " + ex.getMessage());
 		}
+		
 		resultsText.appendMessage("");
+		return lastCommandResult;
 	}
 
+	private void handleLoopCommand(LoopCommand command, MessageHandler resultsText) {
+		int size = command.getLoopCommands().size();
+		List<String> commands = command.getLoopCommands();
+		
+		for(int i=0; i<command.getLoopCommands().size(); i++) {
+			handleCommand(resultsText, command.getLoopCommands().get(i));
+		}		
+	}
+	
 	private String isNamespace(String input) {
 		String namespace = null;
 		// Namespaces must always be single word
@@ -124,60 +162,54 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 	}
 
 	private void handleCommand(String inputLine, String ns) {
-		String sub = null;
-
 		// Parse the input, breaking up the tokens into appropriate
 		// commands, subcommands, and maps
-		Map<String,Object> settings = new HashMap<String, Object>();
-		String comm = parseInput(inputLine.substring(ns.length()).trim(), settings);
-
-		for (String command: availableCommands.getCommands(ns)) {
-			if (command.toLowerCase().equals(comm.toLowerCase())) {
-				sub = command;
-				break;
-			}
-		}
-
-		if (sub == null && (comm != null && comm.length() > 0))
-			throw new RuntimeException("Failed to find command: '" + comm +"' (from namespace: " + ns + ")");
+		Map<String,Object> userArguments = new HashMap<String, Object>(); 
+		String command = parseInput(inputLine.substring(ns.length()).trim(), userArguments);
+		validateCommand(command, ns);
+		List<String> validArgumentNames = availableCommands.getArguments(ns, command);
+		validateCommandArguments(command, ns, validArgumentNames, userArguments);
 		
-		Map<String, Object> modifiedSettings = new HashMap<String, Object>();
-		// Now check the arguments
-		List<String> argList = availableCommands.getArguments(ns,  sub);
-		for (String inputArg: settings.keySet()) {
-			boolean found = false;
-			for (String arg: argList) {
-				if (arg.equalsIgnoreCase(inputArg)) {
-					found = true;
-					modifiedSettings.put(arg, settings.get(inputArg));
-					break;
-				}
-			}
-			if (!found)
-				throw new RuntimeException("Error: argument '"+inputArg+" isn't applicable to command: '"+ns+" "+comm+"'");
-		}
-
 		// Now we have all of the possible arguments and the arguments that the user
 		// has provided.  Check to make sure all required arguments are available
-		for (String arg: argList) {
-			if (availableCommands.getArgRequired(ns, sub, arg) &&
-			    !modifiedSettings.containsKey(arg))
-				throw new RuntimeException("Error: argument '"+arg+"' is required for command: '"+ns+" "+comm+"'");
+		for (String arg: validArgumentNames) {
+			if (availableCommands.getArgRequired(ns, command, arg) &&
+			    !userArguments.containsKey(arg))
+				throw new RuntimeException("Error: argument '"+arg+"' is required for command: '"+ns+" "+command+"'");
 		}
 		
 		processingCommand = true;
-		/*
-		System.out.println("Settings: ");
-		for (String key: settings.keySet()) {
-			System.out.println("   "+key+"="+settings.get(key));
-		}
-		*/
-		// CyCommandManager.execute(ns, sub, settings);
-		taskManager.execute(
-			commandExecutor.createTaskIterator(ns, sub, modifiedSettings, this), 
-		  this);
+		lastCommandResult = null;
+		
+		taskManager.execute(commandExecutor.createTaskIterator(ns, command, userArguments, this), this);
 	}
 
+	private void validateCommandArguments(String command, String ns, List<String> validArgumentNames, Map<String, Object> userArguments) {
+		for(String userArg : userArguments.keySet()) {
+			boolean found = false;
+			for (String validArg : validArgumentNames) {
+				if (userArg.equalsIgnoreCase(validArg)) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				throw new RuntimeException("Error: argument '" + userArg + " isn't applicable to command: '" + ns + " " + command +"'");
+			}				
+		}		
+	}
+
+	private void validateCommand(String command, String namespace) {
+		if(command ==  null || command.isEmpty()) {
+			throw new RuntimeException("Command can not be empty.");
+		}
+		
+		String sub = (availableCommands.getCommands(namespace).contains(command.toLowerCase())) ? command : null;
+
+		if (sub == null && (command != null && command.length() > 0))
+			throw new RuntimeException("Failed to find command: '" + command + "' (from namespace: " + namespace + ")");
+	}
+	
 	private String parseInput(String input, Map<String,Object> settings) {
 		
 		// Tokenize
@@ -442,10 +474,15 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 			resultsText.appendMessage(event.getMessage());
 	}
 
+	/**
+	 * Callback invoked by TFExecutor when the ObservableTask completes
+	 */
 	public void taskFinished(ObservableTask t) {
 		Object res = t.getResults(String.class);
-		if (res != null)
-			resultsText.appendResult(res.toString());
+		if (res != null) {
+			lastCommandResult = res.toString();
+			resultsText.appendResult(lastCommandResult);
+		}	
 	}
 
 	public void allFinished(FinishStatus status) {

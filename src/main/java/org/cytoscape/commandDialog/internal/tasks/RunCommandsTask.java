@@ -8,6 +8,8 @@ import java.io.IOException;
 
 import org.cytoscape.commandDialog.internal.handlers.CommandHandler;
 import org.cytoscape.commandDialog.internal.handlers.MessageHandler;
+import org.cytoscape.commandDialog.internal.interpreter.CommandInterpreterException;
+import org.cytoscape.commandDialog.internal.interpreter.CommandInterpreterUtils;
 import org.cytoscape.commandDialog.internal.ui.CommandToolDialog;
 import org.cytoscape.commandDialog.internal.ui.ConsoleCommandHandler;
 import org.cytoscape.work.AbstractTask;
@@ -16,15 +18,24 @@ import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.work.Tunable;
 
 public class RunCommandsTask extends AbstractTask {
-	
 	CommandToolDialog dialog;
 	CommandHandler handler;
 
 	@ProvidesTitle
 	public String getTitle() { return "Execute Command File"; }
 	
-	@Tunable(description="Command File", params="input=true;fileCategory=unspecified")
 	public File file;
+	@Tunable(description="Command File", required=true, params="input=true;fileCategory=unspecified")
+	public File getfile() {
+		return file;
+	}
+	public void setfile(File file) {
+		this.file = file;
+	}
+	
+	// add a new string tunable to specify file command arguments
+	@Tunable(description="Script arguements")
+	public String args;
 	
 	public RunCommandsTask(CommandToolDialog dialog, CommandHandler handler) {
 		super();
@@ -34,45 +45,54 @@ public class RunCommandsTask extends AbstractTask {
 	
 	@Override
 	public void run(TaskMonitor arg0) throws Exception {
-		try {
-			executeCommandScript(dialog, new ConsoleCommandHandler());
-		} catch (FileNotFoundException fnfe) {
-			arg0.showMessage(TaskMonitor.Level.ERROR, "No such file or directory: "+file.getPath());
-			return;
-		} catch (IOException ioe) {
-			arg0.showMessage(TaskMonitor.Level.ERROR, "Unexpected I/O error: "+ioe.getMessage());
-		}
+		executeCommandScriptInternal(arg0);
 	}
 
 	public void executeCommandScript(String fileName, CommandToolDialog dialog) {
 		file = new File(fileName);
-		ConsoleCommandHandler consoleHandler = new ConsoleCommandHandler();
-		try {
-			executeCommandScript(dialog, consoleHandler);
-		} catch (FileNotFoundException fnfe) {
-			System.err.println( "No such file or directory: "+file.getPath());
-		} catch (IOException ioe) {
-			System.err.println( "Unexpected I/O error: "+ioe.getMessage());
-		}
+		executeCommandScriptInternal(null);
 	}
 
-	public void executeCommandScript(CommandToolDialog dialog, ConsoleCommandHandler consoleHandler) 
-	       throws FileNotFoundException, IOException {
-		BufferedReader reader;
-		reader = new BufferedReader(new FileReader(file));
-
+	private void executeCommandScriptInternal(TaskMonitor arg0) {
+		String errorMessage = "";
+		try {
+			executeCommandScript(dialog, new ConsoleCommandHandler());
+		} catch (FileNotFoundException fnfe) {
+			errorMessage = "No such file or directory: "+file.getPath();			
+		} catch (IOException ioe) {
+			errorMessage = "Unexpected I/O error: " + ioe.getMessage();
+		} catch (CommandInterpreterException ex) {
+			errorMessage = "Error in executing command script. Message: " + ex.getMessage();
+		}
+		if(arg0 != null) {
+			arg0.showMessage(TaskMonitor.Level.ERROR, errorMessage);
+		} else {
+			System.err.println(errorMessage);
+		}
+	}
+	
+	private void executeCommandScript(CommandToolDialog dialog, ConsoleCommandHandler consoleHandler) 
+	       throws FileNotFoundException, IOException, CommandInterpreterException {
 		if (dialog != null) {
 			// We have a GUI
 			dialog.setVisible(true);
 		}
+		
+		CommandInterpreterUtils.parseAndInitializeCommandScriptArguments(args);
+		
+		try (BufferedReader reader = new BufferedReader(new FileReader(file))){
+			String sourceCommand = null;
 			
-		String line;
-		while ((line = reader.readLine()) != null) {
-			if (dialog != null) {
-				dialog.executeCommand(line);
-			} else {
-				consoleHandler.appendCommand(line);
-				handler.handleCommand((MessageHandler) consoleHandler, line);
+			// Read each line of command, pre-process it for variable substitution if required. // add same check of # and empty
+			while ((sourceCommand = reader.readLine()) != null) {
+				if (sourceCommand.length() == 0 || sourceCommand.startsWith("#")) continue;
+				
+				if (dialog != null) {
+					dialog.executeCommand(sourceCommand);
+				} else {
+					consoleHandler.appendCommand(sourceCommand);
+					handler.handleCommand((MessageHandler) consoleHandler, sourceCommand);
+				}				
 			}
 		}
 	}

@@ -69,7 +69,7 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 	private JResultsPane resultsText;
 	private JTextField inputField;
 	private CommandHandler commandHandler;
-
+	
 	public CommandToolDialog (final Frame parent, final CommandHandler commandHandler) {
 		super(parent, false);
 		commandList = new ArrayList<>();
@@ -173,7 +173,6 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 		setContentPane(dataPanel);
 		setMaximumSize(new Dimension(1000, 1000));
 		LookAndFeelUtil.setDefaultOkCancelKeyStrokes(getRootPane(), null, doneButton.getAction());
-		
 		pack();
 	}
 
@@ -185,6 +184,13 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 		commandHandler.handleCommand((MessageHandler) resultsText, command);
 	}
 
+	/**
+	 * External interface to run a single command and get the result.
+	 */
+	public String executeCommandAndReturnResult(String command) {
+		return commandHandler.handleCommand((MessageHandler) resultsText, command);
+	}
+	
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if ("clear".equals(e.getActionCommand())) {
@@ -201,7 +207,8 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 		}
 	}
 
-	class LineAction extends AbstractAction {
+	private class LineAction extends AbstractAction {
+		private static final long serialVersionUID = 6310319332662410418L;
 		
 		String action = null;
 		
@@ -212,9 +219,7 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 			
 		public void actionPerformed(ActionEvent e) {
 			if (commandList.size() == 0) return;
-
-			// System.out.println("in: size = "+commandList.size()+", index = "+commandIndex);
-
+			
 			if (action.equals("next")) {
 				commandIndex++;
 			} else if (action.equals("previous")) {
@@ -233,8 +238,6 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 			} else {
 				inputCommand = commandList.get(commandIndex);
 			}
-
-			// System.out.println("out: size = "+commandList.size()+", index = "+commandIndex);
 			inputField.setText(inputCommand);
 			inputField.selectAll();
 		}
