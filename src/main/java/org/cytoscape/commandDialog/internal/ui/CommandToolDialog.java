@@ -35,7 +35,6 @@ package org.cytoscape.commandDialog.internal.ui;
 import static javax.swing.GroupLayout.DEFAULT_SIZE;
 import static javax.swing.GroupLayout.PREFERRED_SIZE;
 
-import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -100,7 +99,6 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 		
 		resultsText = new JResultsPane(this, dataPanel);
 		resultsText.setEditable(false);
-		resultsText.setPreferredSize(new Dimension(880, 200));
 		
 		final JScrollPane scrollPane = new JScrollPane(resultsText);
 		// scrollPane.getVerticalScrollBar().addAdjustmentListener(resultsText);
@@ -148,7 +146,7 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 								.addComponent(inputLabel)
 						)
 						.addGroup(layout.createParallelGroup(Alignment.LEADING, true)
-								.addComponent(scrollPane, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+								.addComponent(scrollPane, DEFAULT_SIZE, 880, Short.MAX_VALUE)
 								.addComponent(inputField, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
 						)
 				)
@@ -161,7 +159,7 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 								.addGap(1, 1, Short.MAX_VALUE)
 								.addComponent(clearButton, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
 						)
-						.addComponent(scrollPane, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+						.addComponent(scrollPane, DEFAULT_SIZE, 580, Short.MAX_VALUE)
 				)
 				.addGroup(layout.createParallelGroup(Alignment.CENTER, false)
 						.addComponent(inputLabel, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
@@ -171,7 +169,6 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 		);
 		
 		setContentPane(dataPanel);
-		setMaximumSize(new Dimension(1000, 1000));
 		LookAndFeelUtil.setDefaultOkCancelKeyStrokes(getRootPane(), null, doneButton.getAction());
 		pack();
 	}
