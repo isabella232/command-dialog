@@ -321,31 +321,44 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 	}
 
 	private void generateArgumentHelp(String namespace, String command) {
+		String longDescription = availableCommands.getLongDescription(namespace, command);
+		String message = "";
+		if (longDescription != null) {
+			message += longDescription;
+		}
 		List<String> argList = availableCommands.getArguments(namespace, command);
-		String message = "<b>"+namespace+" "+command+"</b> arguments:";
+		message += "<br/><br/><b>"+namespace+" "+command+"</b> arguments:";
 		// resultsText.appendMessage(commandArgs);
-		message += "<ul style='list-style-type:none;margin-top:0px;color:blue'>";
+		message += "<dl style='list-style-type:none;margin-top:0px;color:blue'>";
 		for (String arg: argList) {
-			message += "<li>";
+			message += "<dt>";
 			if (availableCommands.getArgRequired(namespace, command, arg)) {
 				message += "<b>"+arg+"</b>";
 			} else {
 				message += arg;
 			}
 			message += "="+getTypeString(namespace, command, arg);
-			message += ": "+normalizeArgDescription(availableCommands.getArgDescription(namespace, command, arg));
-			message += "</li>\n";
+			message += ": ";
+			message += "</dt>";
+			message += "<dd>";
+			message += normalizeArgDescription(availableCommands.getArgDescription(namespace, command, arg),
+			                                   availableCommands.getArgLongDescription(namespace, command, arg));
+			message += "</dd>";
 		}
-		resultsText.appendMessage(message+"</ul>");
+		resultsText.appendMessage(message+"</dl>");
 	}
 
-	private String normalizeArgDescription(String s) {
-		if (s != null) {
-			s = s.trim();
-			if (s.endsWith(":")) s = s.substring(0, s.length() - 1);
+	private String normalizeArgDescription(String desc, String longDesc) {
+		if (longDesc != null && longDesc.length() > 0) {
+			return longDesc;
 		}
-		
-		return s;
+
+		if (desc != null) {
+			desc = desc.trim();
+			if (desc.endsWith(":")) desc = desc.substring(0, desc.length() - 1);
+		}
+
+		return desc;
 	}
 
 	private String getTypeString(String namespace, String command, String arg) {

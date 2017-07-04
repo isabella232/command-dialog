@@ -148,7 +148,7 @@ public class JResultsPane extends JTextPane implements MessageHandler {
 
 	private void updateStringImmediate(final String style, final String s) {
 		try {
-			String p = "<p style='"+DEFAULT_STYLE+";"+style+"'>"+s+"</p>\n";
+			String p = "<div style='"+DEFAULT_STYLE+";"+style+"'>"+s+"</div>\n";
 			currentDocument.insertBeforeEnd(rootElement, p);
 			setCaretPosition(currentDocument.getLength());
 
