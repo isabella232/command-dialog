@@ -115,10 +115,10 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 					// taskManager.execute(commandExecutor.createTaskIterator(Collections.singletonList(input)));
 					// processingCommand = false;
 
-					String ns = null;
+					String[] nsCommand = null;
 		
-					if ((ns = isNamespace(command)) != null) {
-						handleCommand(command, ns);
+					if ((nsCommand = isNamespace(command)) != null) {
+						handleCommand(nsCommand[1], nsCommand[0]);
 					} else {
 						throw new RuntimeException("Failed to find command namespace: '" + command + "'");
 					}
@@ -148,27 +148,31 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 			handleCommand(resultsText, command.getLoopCommands().get(i));
 		}		
 	}
-	
-	private String isNamespace(String input) {
+
+	// Handle unique matches
+	private String[] isNamespace(String input) {
 		String namespace = null;
 		// Namespaces must always be single word
 		String [] splits = input.split(" ");
-		for (String ns: availableCommands.getNamespaces()) {
-			if (splits[0].equalsIgnoreCase(ns) && 
-			    (namespace == null || ns.length() > namespace.length()))
-				namespace = ns;
+		try {
+			String[] nsCommand = new String[2];
+			nsCommand[0] = uniqueMatch(splits[0], availableCommands.getNamespaces());
+			if (nsCommand[0] == null) return null;
+			nsCommand[1] = input.substring(splits[0].length()).trim();
+			return nsCommand;
+		} catch (RuntimeException e) {
+			throw new RuntimeException("Namespace abbreviation not unique");
 		}
-		return namespace;
 	}
 
 	private void handleCommand(String inputLine, String ns) {
 		// Parse the input, breaking up the tokens into appropriate
 		// commands, subcommands, and maps
 		Map<String,Object> userArguments = new HashMap<String, Object>(); 
-		String command = parseInput(inputLine.substring(ns.length()).trim(), userArguments);
-		validateCommand(command, ns);
+		String command = parseInput(inputLine, userArguments);
+		command = validateCommand(command, ns);
 		List<String> validArgumentNames = availableCommands.getArguments(ns, command);
-		validateCommandArguments(command, ns, validArgumentNames, userArguments);
+		userArguments = validateCommandArguments(command, ns, validArgumentNames, userArguments);
 		
 		// Now we have all of the possible arguments and the arguments that the user
 		// has provided.  Check to make sure all required arguments are available
@@ -184,30 +188,28 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 		taskManager.execute(commandExecutor.createTaskIterator(ns, command, userArguments, this), this);
 	}
 
-	private void validateCommandArguments(String command, String ns, List<String> validArgumentNames, Map<String, Object> userArguments) {
+	private Map<String, Object> validateCommandArguments(String command, String ns, List<String> validArgumentNames, Map<String, Object> userArguments) {
+		Map<String, Object> updatedArgs = new HashMap<>();
 		for(String userArg : userArguments.keySet()) {
-			boolean found = false;
-			for (String validArg : validArgumentNames) {
-				if (userArg.equalsIgnoreCase(validArg)) {
-					found = true;
-					break;
-				}
-			}
-			if (!found) {
+			String argKey = uniqueMatch(userArg, validArgumentNames);
+			if (argKey == null)
 				throw new RuntimeException("Error: argument '" + userArg + " isn't applicable to command: '" + ns + " " + command +"'");
-			}				
-		}		
+			updatedArgs.put(argKey, userArguments.get(userArg));
+		}	
+		return updatedArgs;
 	}
 
-	private void validateCommand(String command, String namespace) {
+	private String validateCommand(String command, String namespace) {
 		if(command ==  null || command.isEmpty()) {
 			throw new RuntimeException("Command can not be empty.");
 		}
 		
-		String sub = (availableCommands.getCommands(namespace).contains(command.toLowerCase())) ? command : null;
+		String sub = uniqueMatch(command, availableCommands.getCommands(namespace));
 
 		if (sub == null && (command != null && command.length() > 0))
 			throw new RuntimeException("Failed to find command: '" + command + "' (from namespace: " + namespace + ")");
+
+		return sub;
 	}
 	
 	private String parseInput(String input, Map<String,Object> settings) {
@@ -467,6 +469,49 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 		} else {
 			return fixedSpan("&lt;"+classString(type.getSimpleName())+"&gt;");
 		}
+	}
+
+	private String uniqueMatch(String input, List<String> matches) {
+		String[] words = input.split(" ");
+		int wordCount = words.length;
+		String bestMatch = null;
+		for (String match: matches) {
+			String[] matchWords = match.split(" ");
+			if (wordCount != matchWords.length)
+				continue;
+			boolean foundMatch = true;
+			for (int word = 0; word < wordCount; word++) {
+				if (!matchWords[word].toLowerCase().startsWith(words[word].toLowerCase())) {
+					foundMatch = false;
+					break;
+				}
+			}
+			if (foundMatch)  {
+				if (bestMatch == null) {
+					bestMatch = match;
+				} else {
+					// OK, we've found multiple matches, but maybe one of them is an exact match
+					String[] foundWords = bestMatch.split(" ");
+					boolean foundExact = false;
+					for (int word = 0; word < wordCount; word++) {
+						// Are both a match?
+						if (foundWords[word].equalsIgnoreCase(words[word]) &&
+								matchWords[word].equalsIgnoreCase(words[word]))
+							continue; // Yes, just keep going
+						if (foundWords[word].equalsIgnoreCase(words[word])) {
+							foundExact = true;
+							break; // bestMatch is still the better match
+						} else if (matchWords[word].equalsIgnoreCase(words[word])) {
+							foundExact = true;
+							bestMatch = match;
+						}
+					}
+					if (!foundExact)
+						throw new RuntimeException("Not unique");
+				}
+			}
+		}
+		return bestMatch;
 	}
 
 	public void doAppend(PaxLoggingEvent event) {
