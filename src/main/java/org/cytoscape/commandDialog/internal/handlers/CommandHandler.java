@@ -42,6 +42,10 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
+import com.vladsch.flexmark.ast.Node;
+import com.vladsch.flexmark.html.HtmlRenderer;
+import com.vladsch.flexmark.parser.Parser;
+
 import org.cytoscape.command.AvailableCommands;
 import org.cytoscape.command.CommandExecutorTaskFactory;
 import org.cytoscape.command.util.EdgeList;
@@ -72,14 +76,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CommandHandler extends Handler implements PaxAppender, TaskObserver {
-	
+
 	boolean processingCommand;
 	AvailableCommands availableCommands;
 	CommandExecutorTaskFactory commandExecutor;
 	MessageHandler resultsText;
 	TaskManager taskManager; // Task Manager
 	private String lastCommandResult;
-	
+
 	private final static Logger logger = LoggerFactory.getLogger(CommandHandler.class);
 
 	public CommandHandler(AvailableCommands availableCommands, 
@@ -93,20 +97,20 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 	public String handleCommand(MessageHandler resultsText, String input) {
 		if (input.length() == 0 || input.startsWith("#")) return null;
 		input = input.trim();
-		
+
 		// handle defined command types
 		this.resultsText = resultsText;
 		Command processedCommand = null;
-		
+
 		try {
 			processedCommand = CommandInterpreter.get().getProcessedCommand(input);
 			if(processedCommand == null) return "";
-			
+
 			if(processedCommand instanceof LoopCommand) {
 				handleLoopCommand((LoopCommand)processedCommand, resultsText);
 			} else {
 				String command = processedCommand.getProcessedCommand();
-				
+
 				// Handle our built-ins
 				if (command.startsWith("help")) {
 					getHelpReturn(command);
@@ -116,18 +120,18 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 					// processingCommand = false;
 
 					String ns = null;
-		
+
 					if ((ns = isNamespace(command)) != null) {
 						handleCommand(command, ns);
 					} else {
 						throw new RuntimeException("Failed to find command namespace: '" + command + "'");
 					}
-					
+
 					if(processedCommand instanceof AssignmentCommand) {
 						CommandInterpreter.get().addVariable(((AssignmentCommand) processedCommand).getTargetVariable(), lastCommandResult);
 					}
 				}
-			}			
+			}
 		} catch (RuntimeException e) {
 			logger.error("Error handling command \"" + input + "\"", e);
 			resultsText.appendError("  " + e.getMessage());
@@ -135,7 +139,7 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 			logger.error("Error handling command \"" + input + "\"", ex);
 			resultsText.appendError("  " + ex.getMessage());
 		}
-		
+
 		resultsText.appendMessage("");
 		return lastCommandResult;
 	}
@@ -143,12 +147,12 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 	private void handleLoopCommand(LoopCommand command, MessageHandler resultsText) {
 		int size = command.getLoopCommands().size();
 		List<String> commands = command.getLoopCommands();
-		
+
 		for(int i=0; i<command.getLoopCommands().size(); i++) {
 			handleCommand(resultsText, command.getLoopCommands().get(i));
-		}		
+		}
 	}
-	
+
 	private String isNamespace(String input) {
 		String namespace = null;
 		// Namespaces must always be single word
@@ -169,7 +173,7 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 		validateCommand(command, ns);
 		List<String> validArgumentNames = availableCommands.getArguments(ns, command);
 		validateCommandArguments(command, ns, validArgumentNames, userArguments);
-		
+
 		// Now we have all of the possible arguments and the arguments that the user
 		// has provided.  Check to make sure all required arguments are available
 		for (String arg: validArgumentNames) {
@@ -177,10 +181,10 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 			    !userArguments.containsKey(arg))
 				throw new RuntimeException("Error: argument '"+arg+"' is required for command: '"+ns+" "+command+"'");
 		}
-		
+
 		processingCommand = true;
 		lastCommandResult = null;
-		
+
 		taskManager.execute(commandExecutor.createTaskIterator(ns, command, userArguments, this), this);
 	}
 
@@ -195,23 +199,23 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 			}
 			if (!found) {
 				throw new RuntimeException("Error: argument '" + userArg + " isn't applicable to command: '" + ns + " " + command +"'");
-			}				
-		}		
+			}
+		}
 	}
 
 	private void validateCommand(String command, String namespace) {
 		if(command ==  null || command.isEmpty()) {
 			throw new RuntimeException("Command can not be empty.");
 		}
-		
+
 		String sub = (availableCommands.getCommands(namespace).contains(command.toLowerCase())) ? command : null;
 
 		if (sub == null && (command != null && command.length() > 0))
 			throw new RuntimeException("Failed to find command: '" + command + "' (from namespace: " + namespace + ")");
 	}
-	
+
 	private String parseInput(String input, Map<String,Object> settings) {
-		
+
 		// Tokenize
 		StringReader reader = new StringReader(input.replace("\\", "\\\\"));
 		StreamTokenizer st = new StreamTokenizer(reader);
@@ -323,7 +327,23 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 	private void generateArgumentHelp(String namespace, String command) {
 		String longDescription = availableCommands.getLongDescription(namespace, command);
 		String message = "";
+		System.out.println("generateArgumentHelp");
 		if (longDescription != null) {
+			System.out.println("longDescription = "+longDescription);
+			// Do we have an HTML string?
+			if (longDescription.trim().startsWith("<html>") || longDescription.trim().startsWith("<HTML>")) {
+				// Yes.  Strip off the "<html></html>" wrapper
+				longDescription = longDescription.trim().substring(6);
+				longDescription = longDescription.substring(0,longDescription.length()-7);
+				System.out.println("longDescription(html) = "+longDescription);
+			} else {
+				// No, pass it through the markdown converter
+				Parser parser = Parser.builder().build();
+				Node document = parser.parse(longDescription);
+				HtmlRenderer renderer = HtmlRenderer.builder().build();
+				longDescription = renderer.render(document);
+				System.out.println("longDescription(markdown) = "+longDescription);
+			}
 			message += longDescription;
 		}
 		List<String> argList = availableCommands.getArguments(namespace, command);
@@ -395,7 +415,7 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 				if (!list.isEmpty())
 					str += keyword(list.get(list.size()-1).toString()); 
 				str += ")&gt;";
-				
+
 				return fixedSpan(str);
 			}
 		} else if (clazz.equals(ListMultipleSelection.class)) {
@@ -409,7 +429,7 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 				if (!list.isEmpty())
 					str += keyword(list.get(list.size()-1).toString());
 				str += "]&gt;";
-				
+
 				return fixedSpan(str);
 			}
 		} else if (clazz.equals(BoundedDouble.class) || clazz.equals(BoundedFloat.class) ||
@@ -495,7 +515,7 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 		if (res != null) {
 			lastCommandResult = res.toString();
 			resultsText.appendResult(lastCommandResult);
-		}	
+		}
 	}
 
 	public void allFinished(FinishStatus status) {
