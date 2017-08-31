@@ -12,7 +12,7 @@ public class QuitTask extends AbstractTask {
 		super();
 		this.shutdown = shutdown;
 	}
-	
+
 	@Override
 	public void run(TaskMonitor arg0) throws Exception {
 		shutdown.exit(0, true);

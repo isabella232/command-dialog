@@ -2,6 +2,7 @@ package org.cytoscape.commandDialog.internal;
 
 import static org.cytoscape.work.ServiceProperties.COMMAND;
 import static org.cytoscape.work.ServiceProperties.COMMAND_DESCRIPTION;
+import static org.cytoscape.work.ServiceProperties.COMMAND_LONG_DESCRIPTION;
 import static org.cytoscape.work.ServiceProperties.COMMAND_NAMESPACE;
 import static org.cytoscape.work.ServiceProperties.ENABLE_FOR;
 import static org.cytoscape.work.ServiceProperties.INSERT_SEPARATOR_BEFORE;
@@ -106,6 +107,11 @@ public class CyActivator extends AbstractCyActivator {
 			commandDialogProps.setProperty(COMMAND_NAMESPACE, "command");
 			commandDialogProps.setProperty(COMMAND_DESCRIPTION, "Open the command line dialog");
 			commandDialogProps.setProperty(IN_MENU_BAR, "true");
+			commandDialogProps.setProperty(COMMAND_LONG_DESCRIPTION,
+			                               "The command line dialog provides a field to enter commands and "+
+			                               "view results.  It also provides the help command to display namespaces, "+
+																		 "commands, and arguments");
+
 			registerService(bc, commandDialog, TaskFactory.class, commandDialogProps);
 
 			TaskFactory pauseCommand = new PauseCommandTaskFactory(swingApp.getJFrame());
@@ -114,6 +120,9 @@ public class CyActivator extends AbstractCyActivator {
 			pauseProperties.setProperty(COMMAND_DESCRIPTION, 
 			                            "Display a message and pause command processing until the user continues it");
 			pauseProperties.setProperty(COMMAND, "pause");
+			pauseProperties.setProperty(COMMAND_LONG_DESCRIPTION,
+			                            "The **pause** command displays a dialog with the text provided in the *message* argument "+
+																	"and waits for the user to click **OK**");
 			registerService(bc, pauseCommand, TaskFactory.class, pauseProperties);
 		} else {
 			dialog = null;
@@ -127,6 +136,10 @@ public class CyActivator extends AbstractCyActivator {
 		runCommandProps.setProperty(COMMAND_NAMESPACE, "command");
 		runCommandProps.setProperty(COMMAND_DESCRIPTION, "Run a series of commands from a file");
 		runCommandProps.setProperty(IN_MENU_BAR, "true");
+		runCommandProps.setProperty(COMMAND_LONG_DESCRIPTION,
+			                          "The **run** command will execute a command script from the "+
+																"file pointed to by the *file* argument.  Arguments to the "+
+																"script are provided by the *args* argument");
 		registerService(bc, runCommand, TaskFactory.class, runCommandProps);
 
 		CyShutdown shutdown = getService(bc, CyShutdown.class);
@@ -135,6 +148,9 @@ public class CyActivator extends AbstractCyActivator {
 		quitCommandProps.setProperty(COMMAND, "quit");
 		quitCommandProps.setProperty(COMMAND_NAMESPACE, "command");
 		quitCommandProps.setProperty(COMMAND_DESCRIPTION, "Exit Cytoscape");
+		quitCommandProps.setProperty(COMMAND_LONG_DESCRIPTION,
+			                           "This command causes Cytoscape to exit."+
+															 	 "It is typically used at the end of a script file");
 		registerService(bc, quitCommand, TaskFactory.class, quitCommandProps);
 
 		TaskFactory sleepCommand = new SleepCommandTaskFactory();
@@ -142,6 +158,10 @@ public class CyActivator extends AbstractCyActivator {
 		sleepProperties.setProperty(COMMAND_NAMESPACE, "command");
 		sleepProperties.setProperty(COMMAND_DESCRIPTION, "Stop command processing for a specified time");
 		sleepProperties.setProperty(COMMAND, "sleep");
+		sleepProperties.setProperty(COMMAND_LONG_DESCRIPTION,
+			                          "The **sleep** command will pause processing for a period of time "+
+																"as specified by *duration* seconds.  It is typically used as part "+
+																"of a command script.");
 		registerService(bc, sleepCommand, TaskFactory.class, sleepProperties);
 
 		if (scriptFile != null) {
@@ -155,6 +175,9 @@ public class CyActivator extends AbstractCyActivator {
 		echoCommandProperties.setProperty(COMMAND_NAMESPACE, "command");
 		echoCommandProperties.setProperty(COMMAND_DESCRIPTION, "Prints the value of a variable");
 		echoCommandProperties.setProperty(COMMAND, "echo");
+		echoCommandProperties.setProperty(COMMAND_LONG_DESCRIPTION,
+			                                "The **echo** command will display the value of the variable "+
+																			"specified by the *variableName* argument");
 		registerService(bc, echoCommand, TaskFactory.class, echoCommandProperties);
 	}
 

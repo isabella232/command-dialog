@@ -329,22 +329,22 @@ public class CommandHandler extends Handler implements PaxAppender, TaskObserver
 	private void generateArgumentHelp(String namespace, String command) {
 		String longDescription = availableCommands.getLongDescription(namespace, command);
 		String message = "";
-		System.out.println("generateArgumentHelp");
+		// System.out.println("generateArgumentHelp");
 		if (longDescription != null) {
-			System.out.println("longDescription = "+longDescription);
+			// System.out.println("longDescription = "+longDescription);
 			// Do we have an HTML string?
 			if (longDescription.trim().startsWith("<html>") || longDescription.trim().startsWith("<HTML>")) {
 				// Yes.  Strip off the "<html></html>" wrapper
 				longDescription = longDescription.trim().substring(6);
 				longDescription = longDescription.substring(0,longDescription.length()-7);
-				System.out.println("longDescription(html) = "+longDescription);
+				// System.out.println("longDescription(html) = "+longDescription);
 			} else {
 				// No, pass it through the markdown converter
 				Parser parser = Parser.builder().build();
 				Node document = parser.parse(longDescription);
 				HtmlRenderer renderer = HtmlRenderer.builder().build();
 				longDescription = renderer.render(document);
-				System.out.println("longDescription(markdown) = "+longDescription);
+				// System.out.println("longDescription(markdown) = "+longDescription);
 			}
 			message += longDescription;
 		}

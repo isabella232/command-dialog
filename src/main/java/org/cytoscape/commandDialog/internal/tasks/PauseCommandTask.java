@@ -14,14 +14,15 @@ public class PauseCommandTask extends AbstractTask {
 	@ProvidesTitle
 	public String getTitle() { return "Exiting Cytoscape"; }
 
-	@Tunable (description="Message to show user (will wait until user responds)")
+	@Tunable (description="Message to show user (will wait until user responds)",
+					  exampleStringValue="Press OK to continue")
 	public String message = null;
 
 	public PauseCommandTask(JFrame parent) {
 		super();
 		this.parent = parent;
 	}
-	
+
 	@Override
 	public void run(TaskMonitor arg0) throws Exception {
 		if (message==null || message.length() == 0)
