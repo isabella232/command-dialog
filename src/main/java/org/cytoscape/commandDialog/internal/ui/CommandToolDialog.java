@@ -1,4 +1,3 @@
-/* vim: set ts=2: */
 /**
  * Copyright (c) 2010 The Regents of the University of California.
  * All rights reserved.
@@ -38,6 +37,7 @@ import static javax.swing.GroupLayout.PREFERRED_SIZE;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,9 +57,11 @@ import org.cytoscape.commandDialog.internal.handlers.CommandHandler;
 import org.cytoscape.commandDialog.internal.handlers.MessageHandler;
 import org.cytoscape.util.swing.LookAndFeelUtil;
 
+@SuppressWarnings("serial")
 public class CommandToolDialog extends JDialog implements ActionListener {
 
-	private static final long serialVersionUID = -8571008312289041096L;
+	private static final String NEXT = "next";
+	private static final String PREVIOUS = "previous";
 	
 	private List<String> commandList;
 	private int commandIndex = 0;
@@ -80,13 +82,12 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 	@Override
 	public void setVisible(boolean tf) {
 		super.setVisible(tf);
-		inputField.requestFocusInWindow();
+		getInputField().requestFocusInWindow();
 	}
 
 	/**
 	 * Initialize all of the graphical components of the dialog
 	 */
-	@SuppressWarnings("serial")
 	private void initComponents() {
 		setTitle("Command Line Dialog");
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -103,17 +104,6 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 		final JScrollPane scrollPane = new JScrollPane(resultsText);
 		// scrollPane.getVerticalScrollBar().addAdjustmentListener(resultsText);
 		resultsText.setScrollPane(scrollPane); // So we can update the scroll position
-
-		inputField = new JTextField();
-		// Set up our up-arrow/down-arrow actions
-		final Action previousAction = new LineAction("previous");
-		inputField.getInputMap().put(KeyStroke.getKeyStroke("UP"), "previous");
-		inputField.getActionMap().put("previous", previousAction);
-
-		final Action nextAction = new LineAction("next");
-		inputField.getInputMap().put(KeyStroke.getKeyStroke("DOWN"), "next");
-		inputField.getActionMap().put("next", nextAction);
-		inputField.addActionListener(this);
 
 		// Create the button box
 		final JButton doneButton = new JButton(new AbstractAction("Close") {
@@ -147,7 +137,7 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 						)
 						.addGroup(layout.createParallelGroup(Alignment.LEADING, true)
 								.addComponent(scrollPane, DEFAULT_SIZE, 880, Short.MAX_VALUE)
-								.addComponent(inputField, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+								.addComponent(getInputField(), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
 						)
 				)
 				.addComponent(buttonBox, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
@@ -163,7 +153,7 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 				)
 				.addGroup(layout.createParallelGroup(Alignment.CENTER, false)
 						.addComponent(inputLabel, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
-						.addComponent(inputField, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
+						.addComponent(getInputField(), PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
 				)
 				.addComponent(buttonBox, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
 		);
@@ -193,19 +183,36 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 		if ("clear".equals(e.getActionCommand())) {
 			resultsText.clear();
 		} else {
-			String input = inputField.getText();
+			String input = getInputField().getText();
 			resultsText.appendCommand(input);
 			commandList.add(input);
 			commandIndex = commandList.size();
 
 			commandHandler.handleCommand((MessageHandler) resultsText, input);
 
-			inputField.setText("");
+			getInputField().setText("");
 		}
 	}
 
+	private JTextField getInputField() {
+		if (inputField == null) {
+			inputField = new JTextField();
+			
+			// Set up our up-arrow/down-arrow actions
+			final Action previousAction = new LineAction(PREVIOUS);
+			inputField.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0), PREVIOUS);
+			inputField.getActionMap().put(PREVIOUS, previousAction);
+
+			final Action nextAction = new LineAction(NEXT);
+			inputField.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0), NEXT);
+			inputField.getActionMap().put(NEXT, nextAction);
+			inputField.addActionListener(this);
+		}
+		
+		return inputField;
+	}
+	
 	private class LineAction extends AbstractAction {
-		private static final long serialVersionUID = 6310319332662410418L;
 		
 		String action = null;
 		
@@ -214,18 +221,21 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 			this.action = action;
 		}
 			
+		@Override
 		public void actionPerformed(ActionEvent e) {
-			if (commandList.size() == 0) return;
-			
-			if (action.equals("next")) {
-				commandIndex++;
-			} else if (action.equals("previous")) {
-				commandIndex--;
-			} else
+			if (commandList.size() == 0)
 				return;
+			
+			if (action.equals(NEXT)) {
+				commandIndex++;
+			} else if (action.equals(PREVIOUS)) {
+				commandIndex--;
+			} else {
+				return;
+			}
 
-
-			String inputCommand;
+			final String inputCommand;
+			
 			if (commandIndex >= commandList.size()) {
 				inputCommand = "";
 				commandIndex = commandList.size();
@@ -235,8 +245,9 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 			} else {
 				inputCommand = commandList.get(commandIndex);
 			}
-			inputField.setText(inputCommand);
-			inputField.selectAll();
+			
+			getInputField().setText(inputCommand);
+			getInputField().selectAll();
 		}
 	}
 }
