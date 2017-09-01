@@ -4,6 +4,8 @@ import static org.cytoscape.work.ServiceProperties.COMMAND;
 import static org.cytoscape.work.ServiceProperties.COMMAND_DESCRIPTION;
 import static org.cytoscape.work.ServiceProperties.COMMAND_LONG_DESCRIPTION;
 import static org.cytoscape.work.ServiceProperties.COMMAND_NAMESPACE;
+import static org.cytoscape.work.ServiceProperties.COMMAND_EXAMPLE_JSON;
+import static org.cytoscape.work.ServiceProperties.COMMAND_SUPPORTS_JSON;
 import static org.cytoscape.work.ServiceProperties.ENABLE_FOR;
 import static org.cytoscape.work.ServiceProperties.INSERT_SEPARATOR_BEFORE;
 import static org.cytoscape.work.ServiceProperties.IN_MENU_BAR;
@@ -177,7 +179,9 @@ public class CyActivator extends AbstractCyActivator {
 		echoCommandProperties.setProperty(COMMAND, "echo");
 		echoCommandProperties.setProperty(COMMAND_LONG_DESCRIPTION,
 			                                "The **echo** command will display the value of the variable "+
-																			"specified by the *variableName* argument");
+											"specified by the *variableName* argument");
+		echoCommandProperties.setProperty(COMMAND_SUPPORTS_JSON, "true");
+		echoCommandProperties.setProperty(COMMAND_EXAMPLE_JSON, "[{\"var1\":\"1234\"},{\"var2\":\"value2\"}]");
 		registerService(bc, echoCommand, TaskFactory.class, echoCommandProperties);
 	}
 

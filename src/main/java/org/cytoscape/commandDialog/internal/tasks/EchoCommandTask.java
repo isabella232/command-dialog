@@ -12,7 +12,6 @@ import org.cytoscape.work.ObservableTask;
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.work.Tunable;
 import org.cytoscape.work.json.JSONResult;
-import org.cytoscape.work.json.ExampleJSONString;
 
 public class EchoCommandTask extends AbstractTask implements ObservableTask {
 
@@ -65,7 +64,7 @@ public class EchoCommandTask extends AbstractTask implements ObservableTask {
 	public class MyJSONResult implements JSONResult {
 
   	@Override
-		@ExampleJSONString(value="[{\"var1\":\"1234\"},{\"var2\":\"value2\"}]")
+
 		public String getJSON() {
 			if(variableName.equals("*")) {
 				String result = null;
