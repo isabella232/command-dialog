@@ -179,7 +179,8 @@ public class CyActivator extends AbstractCyActivator {
 		echoCommandProperties.setProperty(COMMAND, "echo");
 		echoCommandProperties.setProperty(COMMAND_LONG_DESCRIPTION,
 			                                "The **echo** command will display the value of the variable "+
-											"specified by the *variableName* argument");
+											                "specified by the *variableName* argument, or all variables if "+
+											                "variableName is not provided");
 		echoCommandProperties.setProperty(COMMAND_SUPPORTS_JSON, "true");
 		echoCommandProperties.setProperty(COMMAND_EXAMPLE_JSON, "[{\"var1\":\"1234\"},{\"var2\":\"value2\"}]");
 		registerService(bc, echoCommand, TaskFactory.class, echoCommandProperties);
