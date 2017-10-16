@@ -31,7 +31,7 @@ public class EchoCommandTask extends AbstractTask implements ObservableTask {
 	@Override
 	public void run(TaskMonitor arg0) throws Exception {
 		try {
-			if(variableName.equals("*")) {
+			if(variableName == null || variableName.equals("*")) {
 				allVariables = CommandInterpreter.get().getAllVariables();
 				value = allVariables.toString();
 				resultString = "All defined variables: " + value;
