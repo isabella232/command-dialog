@@ -113,6 +113,8 @@ public class CyActivator extends AbstractCyActivator {
 			                               "The command line dialog provides a field to enter commands and "+
 			                               "view results.  It also provides the help command to display namespaces, "+
 																		 "commands, and arguments");
+			commandDialogProps.setProperty(COMMAND_SUPPORTS_JSON, "true");
+			commandDialogProps.setProperty(COMMAND_EXAMPLE_JSON, "{}");
 
 			registerService(bc, commandDialog, TaskFactory.class, commandDialogProps);
 
@@ -125,6 +127,8 @@ public class CyActivator extends AbstractCyActivator {
 			pauseProperties.setProperty(COMMAND_LONG_DESCRIPTION,
 			                            "The **pause** command displays a dialog with the text provided in the *message* argument "+
 																	"and waits for the user to click **OK**");
+			pauseProperties.setProperty(COMMAND_SUPPORTS_JSON, "true");
+			pauseProperties.setProperty(COMMAND_EXAMPLE_JSON, "{}");
 			registerService(bc, pauseCommand, TaskFactory.class, pauseProperties);
 		} else {
 			dialog = null;
@@ -142,6 +146,8 @@ public class CyActivator extends AbstractCyActivator {
 			                          "The **run** command will execute a command script from the "+
 																"file pointed to by the *file* argument.  Arguments to the "+
 																"script are provided by the *args* argument");
+		runCommandProps.setProperty(COMMAND_SUPPORTS_JSON, "true");
+		runCommandProps.setProperty(COMMAND_EXAMPLE_JSON, "{}");
 		registerService(bc, runCommand, TaskFactory.class, runCommandProps);
 
 		CyShutdown shutdown = getService(bc, CyShutdown.class);
@@ -153,6 +159,8 @@ public class CyActivator extends AbstractCyActivator {
 		quitCommandProps.setProperty(COMMAND_LONG_DESCRIPTION,
 			                           "This command causes Cytoscape to exit."+
 															 	 "It is typically used at the end of a script file");
+		quitCommandProps.setProperty(COMMAND_SUPPORTS_JSON, "true");
+		quitCommandProps.setProperty(COMMAND_EXAMPLE_JSON, "{}");
 		registerService(bc, quitCommand, TaskFactory.class, quitCommandProps);
 
 		TaskFactory sleepCommand = new SleepCommandTaskFactory();
@@ -164,6 +172,8 @@ public class CyActivator extends AbstractCyActivator {
 			                          "The **sleep** command will pause processing for a period of time "+
 																"as specified by *duration* seconds.  It is typically used as part "+
 																"of a command script.");
+		sleepProperties.setProperty(COMMAND_SUPPORTS_JSON, "true");
+		sleepProperties.setProperty(COMMAND_EXAMPLE_JSON, "{}");
 		registerService(bc, sleepCommand, TaskFactory.class, sleepProperties);
 
 		if (scriptFile != null) {

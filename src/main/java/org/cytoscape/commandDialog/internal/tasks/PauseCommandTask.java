@@ -8,7 +8,7 @@ import org.cytoscape.work.ProvidesTitle;
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.work.Tunable;
 
-public class PauseCommandTask extends AbstractTask {
+public class PauseCommandTask extends AbstractEmptyObservableTask {
 	JFrame parent;
 
 	@ProvidesTitle

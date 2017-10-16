@@ -17,7 +17,7 @@ import org.cytoscape.work.ProvidesTitle;
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.work.Tunable;
 
-public class RunCommandsTask extends AbstractTask {
+public class RunCommandsTask extends AbstractEmptyObservableTask {
 	CommandToolDialog dialog;
 	CommandHandler handler;
 

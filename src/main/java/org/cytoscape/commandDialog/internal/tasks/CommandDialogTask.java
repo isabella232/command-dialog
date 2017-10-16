@@ -5,7 +5,7 @@ import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.ProvidesTitle;
 import org.cytoscape.work.TaskMonitor;
 
-public class CommandDialogTask extends AbstractTask {
+public class CommandDialogTask extends AbstractEmptyObservableTask {
 
 	CommandToolDialog dialog;
 

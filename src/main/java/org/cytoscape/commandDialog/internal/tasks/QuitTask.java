@@ -4,7 +4,7 @@ import org.cytoscape.application.CyShutdown;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskMonitor;
 
-public class QuitTask extends AbstractTask {
+public class QuitTask extends AbstractEmptyObservableTask {
 	public String getTitle() { return "Exiting Cytoscape"; }
 	CyShutdown shutdown;
 

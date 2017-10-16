@@ -5,7 +5,7 @@ import org.cytoscape.work.ProvidesTitle;
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.work.Tunable;
 
-public class SleepCommandTask extends AbstractTask {
+public class SleepCommandTask extends AbstractEmptyObservableTask {
 
 	@ProvidesTitle
 	public String getTitle() { return "Sleeping..."; }
