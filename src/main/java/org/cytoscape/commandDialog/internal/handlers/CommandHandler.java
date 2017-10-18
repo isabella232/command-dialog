@@ -34,6 +34,7 @@ package org.cytoscape.commandDialog.internal.handlers;
 
 import java.io.StreamTokenizer;
 import java.io.StringReader;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

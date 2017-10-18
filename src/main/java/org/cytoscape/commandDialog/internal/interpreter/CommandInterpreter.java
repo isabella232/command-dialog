@@ -10,6 +10,7 @@ import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import javax.swing.SwingUtilities;
 
 /**
  * Class to parse a single command and also maintain the variable states
@@ -38,13 +39,30 @@ public class CommandInterpreter {
 	}
 	
 	
-	private CommandInterpreter() {
+	private CommandInterpreter() throws CommandInterpreterException {
+		// For some reason, this needs to be done on the EDT
+		if (SwingUtilities.isEventDispatchThread()) {
+			initializeEngine();
+		} else {
+			try {
+				SwingUtilities.invokeAndWait(new Runnable() {
+					public void run() {
+						initializeEngine();
+					}
+				});
+			} catch (Exception e) {
+				throw new CommandInterpreterException("Unable to initialize script engine: "+e.getMessage());
+			}
+		}
+	}
+
+	private void initializeEngine() {
 		ScriptEngineManager manager = new ScriptEngineManager();
 		engine = manager.getEngineByName("js");
 		bindings = engine.getBindings(ScriptContext.ENGINE_SCOPE);
 	}
 	
-	public static CommandInterpreter get() {
+	public static CommandInterpreter get() throws CommandInterpreterException {
 		if(_instance == null) {
 			_instance = new CommandInterpreter();
 		}

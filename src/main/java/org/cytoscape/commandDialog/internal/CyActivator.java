@@ -126,7 +126,7 @@ public class CyActivator extends AbstractCyActivator {
 			pauseProperties.setProperty(COMMAND, "pause");
 			pauseProperties.setProperty(COMMAND_LONG_DESCRIPTION,
 			                            "The **pause** command displays a dialog with the text provided in the *message* argument "+
-																	"and waits for the user to click **OK**");
+			                            "and waits for the user to click **OK**");
 			pauseProperties.setProperty(COMMAND_SUPPORTS_JSON, "true");
 			pauseProperties.setProperty(COMMAND_EXAMPLE_JSON, "{}");
 			registerService(bc, pauseCommand, TaskFactory.class, pauseProperties);
@@ -143,9 +143,11 @@ public class CyActivator extends AbstractCyActivator {
 		runCommandProps.setProperty(COMMAND_DESCRIPTION, "Run a series of commands from a file");
 		runCommandProps.setProperty(IN_MENU_BAR, "true");
 		runCommandProps.setProperty(COMMAND_LONG_DESCRIPTION,
-			                          "The **run** command will execute a command script from the "+
-																"file pointed to by the *file* argument.  Arguments to the "+
-																"script are provided by the *args* argument");
+		                            "The **run** command will execute a command script from the "+
+		                            "file pointed to by the ``file`` argument, which "+
+		                            "should contain Cytoscape commands, one per line. "+
+		                            "Arguments to the "+
+		                            "script are provided by the *args* argument");
 		runCommandProps.setProperty(COMMAND_SUPPORTS_JSON, "true");
 		runCommandProps.setProperty(COMMAND_EXAMPLE_JSON, "{}");
 		registerService(bc, runCommand, TaskFactory.class, runCommandProps);
@@ -157,8 +159,8 @@ public class CyActivator extends AbstractCyActivator {
 		quitCommandProps.setProperty(COMMAND_NAMESPACE, "command");
 		quitCommandProps.setProperty(COMMAND_DESCRIPTION, "Exit Cytoscape");
 		quitCommandProps.setProperty(COMMAND_LONG_DESCRIPTION,
-			                           "This command causes Cytoscape to exit."+
-															 	 "It is typically used at the end of a script file");
+		                             "This command causes Cytoscape to exit."+
+		                             "It is typically used at the end of a script file");
 		quitCommandProps.setProperty(COMMAND_SUPPORTS_JSON, "true");
 		quitCommandProps.setProperty(COMMAND_EXAMPLE_JSON, "{}");
 		registerService(bc, quitCommand, TaskFactory.class, quitCommandProps);
@@ -169,9 +171,9 @@ public class CyActivator extends AbstractCyActivator {
 		sleepProperties.setProperty(COMMAND_DESCRIPTION, "Stop command processing for a specified time");
 		sleepProperties.setProperty(COMMAND, "sleep");
 		sleepProperties.setProperty(COMMAND_LONG_DESCRIPTION,
-			                          "The **sleep** command will pause processing for a period of time "+
-																"as specified by *duration* seconds.  It is typically used as part "+
-																"of a command script.");
+		                            "The **sleep** command will pause processing for a period of time "+
+		                            "as specified by *duration* seconds.  It is typically used as part "+
+		                            "of a command script.");
 		sleepProperties.setProperty(COMMAND_SUPPORTS_JSON, "true");
 		sleepProperties.setProperty(COMMAND_EXAMPLE_JSON, "{}");
 		registerService(bc, sleepCommand, TaskFactory.class, sleepProperties);
@@ -188,9 +190,9 @@ public class CyActivator extends AbstractCyActivator {
 		echoCommandProperties.setProperty(COMMAND_DESCRIPTION, "Prints the value of a variable");
 		echoCommandProperties.setProperty(COMMAND, "echo");
 		echoCommandProperties.setProperty(COMMAND_LONG_DESCRIPTION,
-			                                "The **echo** command will display the value of the variable "+
-											                "specified by the *variableName* argument, or all variables if "+
-											                "variableName is not provided");
+		                                  "The **echo** command will display the value of the variable "+
+		                                  "specified by the *variableName* argument, or all variables if "+
+		                                  "variableName is not provided");
 		echoCommandProperties.setProperty(COMMAND_SUPPORTS_JSON, "true");
 		echoCommandProperties.setProperty(COMMAND_EXAMPLE_JSON, "[{\"var1\":\"1234\"},{\"var2\":\"value2\"}]");
 		registerService(bc, echoCommand, TaskFactory.class, echoCommandProperties);

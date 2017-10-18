@@ -17,8 +17,8 @@ public class EchoCommandTask extends AbstractTask implements ObservableTask {
 
 	@Tunable(description="Variable name",
 	         longDescription="The name of the variable or '*' to display the value of all variables",
-					 exampleStringValue="*")
-	public String variableName;
+					 exampleStringValue="*", required=true)
+	public String variableName = null;
 
 	private String resultString = null;
 	private String value = "";
@@ -31,7 +31,8 @@ public class EchoCommandTask extends AbstractTask implements ObservableTask {
 	@Override
 	public void run(TaskMonitor arg0) throws Exception {
 		try {
-			if(variableName == null || variableName.equals("*")) {
+			if(variableName == null || 
+			   variableName.equals("") || variableName.equals("*")) {
 				allVariables = CommandInterpreter.get().getAllVariables();
 				value = allVariables.toString();
 				resultString = "All defined variables: " + value;
@@ -64,26 +65,28 @@ public class EchoCommandTask extends AbstractTask implements ObservableTask {
 	public class MyJSONResult implements JSONResult {
 
   	@Override
-
 		public String getJSON() {
-			if(variableName.equals("*")) {
-				String result = null;
+			if(variableName == null || variableName.equals("") 
+			   || variableName.equals("*")) {
+				String result = "[";
+				boolean first = true;
 				for (Entry<String, Object> entry: allVariables) {
-					if (result == null)
-						result = "["+getValue(entry.getKey(), entry.getValue());
-					else
+					if (first) {
+						result += getValue(entry.getKey(), entry.getValue());
+						first = false;
+					} else
 						result += ","+getValue(entry.getKey(), entry.getValue());
 				}
 				return result+"]";
 
-			}else {
+			} else {
 				return getValue(variableName, value);
 			}
 
 		}
 
 		public String getValue(String name, Object value) {
-			return "{"+name+":"+value.toString()+"}";
+			return "{\""+name+"\":\""+value.toString()+"\"}";
 		}
 	}
 }
