@@ -85,7 +85,16 @@ public class CyActivator extends AbstractCyActivator {
 		                        "TaskMonitorShowMessagesAppender"));
 
 		// And register ourselves as a listener for userlog handlers
-		LogManager.getLogManager().getLogger(CyUserLog.NAME).addHandler(commandHandler);
+		if (LogManager.getLogManager() != null) {
+			if (LogManager.getLogManager().getLogger(CyUserLog.NAME) != null) {
+				LogManager.getLogManager().getLogger(CyUserLog.NAME).addHandler(commandHandler);
+			}
+			else {
+				System.err.println("CyUserLog is null");
+			}
+		} else {
+			System.err.println("Java Util Logmanager is null");
+		}
 
 		// Get any command line arguments.  The "-S" and "-R" are ours
 		CyProperty<Properties> commandLineProps = getService(bc, CyProperty.class, "(cyPropertyName=commandline.props)");
