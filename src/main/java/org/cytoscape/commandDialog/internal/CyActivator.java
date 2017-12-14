@@ -31,6 +31,8 @@ import org.cytoscape.commandDialog.internal.ui.CommandToolDialog;
 
 import org.cytoscape.app.event.AppsFinishedStartingEvent;
 import org.cytoscape.app.event.AppsFinishedStartingListener;
+import org.cytoscape.application.CyApplicationConfiguration;
+import org.cytoscape.application.events.CyShutdownListener;
 import org.cytoscape.application.swing.CySwingApplication;
 import org.cytoscape.application.CyShutdown;
 import org.cytoscape.application.CyUserLog;
@@ -77,6 +79,7 @@ public class CyActivator extends AbstractCyActivator {
 		CommandExecutorTaskFactory commandExecutor = getService(bc, CommandExecutorTaskFactory.class);
 		SynchronousTaskManager taskManager = getService(bc, SynchronousTaskManager.class);
 		CommandHandler commandHandler = new CommandHandler(availableCommands, commandExecutor, taskManager);
+		CyApplicationConfiguration appConfig = getService(bc, CyApplicationConfiguration.class);
 		final CommandToolDialog dialog;
 
 		// Register ourselves as a listener for CyUserMessage logs
@@ -108,7 +111,9 @@ public class CyActivator extends AbstractCyActivator {
 		if (haveGUI) {
 			CySwingApplication swingApp = (CySwingApplication) getService(bc, CySwingApplication.class);
 			// Create our dialog -- we only want one of these instantiated
-			dialog = new CommandToolDialog(swingApp.getJFrame(), commandHandler);
+			dialog = new CommandToolDialog(swingApp.getJFrame(), commandHandler, appConfig);
+			registerService(bc, dialog, CyShutdownListener.class, new Properties());
+
 			// Menu task factories
 			TaskFactory commandDialog = new CommandDialogTaskFactory(dialog);
 			Properties commandDialogProps = new Properties();
