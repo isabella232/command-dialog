@@ -38,6 +38,10 @@ import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,16 +57,23 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 
+import org.apache.log4j.Logger;
+
+import org.cytoscape.application.CyApplicationConfiguration;
+import org.cytoscape.application.CyUserLog;
+import org.cytoscape.application.events.CyShutdownEvent;
+import org.cytoscape.application.events.CyShutdownListener;
+
 import org.cytoscape.commandDialog.internal.handlers.CommandHandler;
 import org.cytoscape.commandDialog.internal.handlers.MessageHandler;
 import org.cytoscape.util.swing.LookAndFeelUtil;
 
 @SuppressWarnings("serial")
-public class CommandToolDialog extends JDialog implements ActionListener {
+public class CommandToolDialog extends JDialog implements ActionListener,CyShutdownListener {
 
 	private static final String NEXT = "next";
 	private static final String PREVIOUS = "previous";
-	
+
 	private List<String> commandList;
 	private int commandIndex = 0;
 
@@ -70,12 +81,23 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 	private JResultsPane resultsText;
 	private JTextField inputField;
 	private CommandHandler commandHandler;
-	
-	public CommandToolDialog (final Frame parent, final CommandHandler commandHandler) {
+	private File savedCommandsFile;
+
+	public int MAX_SAVED_COMMANDS = 500;
+	final Logger logger;
+
+	public CommandToolDialog (final Frame parent, final CommandHandler commandHandler, 
+	                          final CyApplicationConfiguration appConfig) {
 		super(parent, false);
 		commandList = new ArrayList<>();
+		logger = Logger.getLogger(CyUserLog.NAME);
 		this.commandHandler = commandHandler;
-		
+		File appConfigDir = appConfig.getConfigurationDirectoryLocation();
+		savedCommandsFile = new File(appConfigDir.getAbsolutePath()+File.separator+"commandHistory.txt");
+		if (savedCommandsFile.exists()) {
+			readCommands(savedCommandsFile);
+		}
+
 		initComponents();
 	}
 
@@ -83,6 +105,19 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 	public void setVisible(boolean tf) {
 		super.setVisible(tf);
 		getInputField().requestFocusInWindow();
+	}
+
+	private void readCommands(File commandsFile) {
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(commandsFile));
+			String line;
+			while ((line = br.readLine()) != null) {
+				commandList.add(line);
+			}
+			commandIndex = commandList.size();
+		} catch (Exception e) {
+			logger.error("Error reading command history from '"+commandsFile.getAbsolutePath()+"': "+e);
+		}
 	}
 
 	/**
@@ -97,10 +132,10 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 
 		final JLabel resultsLabel = new JLabel("Reply Log:");
 		final JLabel inputLabel = new JLabel("Command:");
-		
+
 		resultsText = new JResultsPane(this, dataPanel);
 		resultsText.setEditable(false);
-		
+
 		final JScrollPane scrollPane = new JScrollPane(resultsText);
 		// scrollPane.getVerticalScrollBar().addAdjustmentListener(resultsText);
 		resultsText.setScrollPane(scrollPane); // So we can update the scroll position
@@ -122,12 +157,12 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 		final JPanel buttonBox = LookAndFeelUtil.createOkCancelPanel(null, doneButton);
 		buttonBox.add(clearButton);
 		buttonBox.add(doneButton);
-		
+
 		final GroupLayout layout = new GroupLayout(dataPanel);
 		dataPanel.setLayout(layout);
 		layout.setAutoCreateContainerGaps(true);
 		layout.setAutoCreateGaps(true);
-		
+
 		layout.setHorizontalGroup(layout.createParallelGroup(Alignment.CENTER, true)
 				.addGroup(layout.createSequentialGroup()
 						.addGroup(layout.createParallelGroup(Alignment.TRAILING, false)
@@ -157,7 +192,7 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 				)
 				.addComponent(buttonBox, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
 		);
-		
+
 		setContentPane(dataPanel);
 		LookAndFeelUtil.setDefaultOkCancelKeyStrokes(getRootPane(), null, doneButton.getAction());
 		pack();
@@ -177,7 +212,38 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 	public String executeCommandAndReturnResult(String command) {
 		return commandHandler.handleCommand((MessageHandler) resultsText, command);
 	}
-	
+
+	/**
+	 * Set the list of commands.
+	 */
+	public void setCommandList(List<String> commands) {
+		if (commands != null && commands.size() > 0)
+			commandList.addAll(commands);
+	};
+
+	/**
+	 * Write out the last 500 commands
+	 */
+	public void handleEvent(CyShutdownEvent shutdown) {
+		if (savedCommandsFile.exists()) {
+			savedCommandsFile.delete();
+		}
+		int start = 0;
+		if (commandList.size() > MAX_SAVED_COMMANDS)
+			start = commandList.size() - MAX_SAVED_COMMANDS;
+
+		try {
+			FileWriter writer = new FileWriter(savedCommandsFile);
+			for (int i = start; i < commandList.size(); i++) {
+				writer.write(commandList.get(i)+"\n");
+			}
+			writer.close();
+		} catch (Exception ioe){
+			logger.error("Error writing command history to '"+savedCommandsFile.getAbsolutePath()+"': "+ioe);
+			System.err.println("Error writing command history to '"+savedCommandsFile.getAbsolutePath()+"': "+ioe);
+		}
+	}
+
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if ("clear".equals(e.getActionCommand())) {
@@ -197,7 +263,7 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 	private JTextField getInputField() {
 		if (inputField == null) {
 			inputField = new JTextField();
-			
+
 			// Set up our up-arrow/down-arrow actions
 			final Action previousAction = new LineAction(PREVIOUS);
 			inputField.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0), PREVIOUS);
@@ -208,24 +274,24 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 			inputField.getActionMap().put(NEXT, nextAction);
 			inputField.addActionListener(this);
 		}
-		
+
 		return inputField;
 	}
-	
+
 	private class LineAction extends AbstractAction {
-		
+
 		String action = null;
-		
+
 		public LineAction(String action) {
 			super();
 			this.action = action;
 		}
-			
+
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			if (commandList.size() == 0)
 				return;
-			
+
 			if (action.equals(NEXT)) {
 				commandIndex++;
 			} else if (action.equals(PREVIOUS)) {
@@ -235,7 +301,7 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 			}
 
 			final String inputCommand;
-			
+
 			if (commandIndex >= commandList.size()) {
 				inputCommand = "";
 				commandIndex = commandList.size();
@@ -245,7 +311,7 @@ public class CommandToolDialog extends JDialog implements ActionListener {
 			} else {
 				inputCommand = commandList.get(commandIndex);
 			}
-			
+
 			getInputField().setText(inputCommand);
 			getInputField().selectAll();
 		}
