@@ -84,7 +84,12 @@ public class CyActivator extends AbstractCyActivator {
 		                ezProps("org.ops4j.pax.logging.appender.name", 
 		                        "TaskMonitorShowMessagesAppender"));
 
+		registerService(bc, commandHandler, PaxAppender.class,
+				 ezProps("org.ops4j.pax.logging.appender.name", 
+	                        "CyUserLog"));
+		
 		// And register ourselves as a listener for userlog handlers
+		/*
 		if (LogManager.getLogManager() != null) {
 			if (LogManager.getLogManager().getLogger(CyUserLog.NAME) != null) {
 				LogManager.getLogManager().getLogger(CyUserLog.NAME).addHandler(commandHandler);
@@ -94,7 +99,7 @@ public class CyActivator extends AbstractCyActivator {
 			}
 		} else {
 			System.err.println("Java Util Logmanager is null");
-		}
+		}*/
 
 		// Get any command line arguments.  The "-S" and "-R" are ours
 		CyProperty<Properties> commandLineProps = getService(bc, CyProperty.class, "(cyPropertyName=commandline.props)");
