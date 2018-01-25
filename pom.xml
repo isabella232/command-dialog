@@ -16,7 +16,7 @@
 
 	<groupId>org.cytoscape</groupId>
 	<artifactId>command-dialog</artifactId>
-	<version>3.7.0-SNAPSHOT</version>
+	<version>3.7.0</version>
 	<name>Command Line Implementation</name>
 	<packaging>bundle</packaging>
 
