@@ -34,7 +34,9 @@ package org.cytoscape.commandDialog.internal.ui;
 import static javax.swing.GroupLayout.DEFAULT_SIZE;
 import static javax.swing.GroupLayout.PREFERRED_SIZE;
 
-import java.awt.Frame;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -49,6 +51,7 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
+import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -56,11 +59,14 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
+import javax.swing.border.LineBorder;
 
 import org.apache.log4j.Logger;
 
 import org.cytoscape.application.CyApplicationConfiguration;
 import org.cytoscape.application.CyUserLog;
+import org.cytoscape.application.swing.CytoPanelComponent2;
+import org.cytoscape.application.swing.CytoPanelName;
 import org.cytoscape.application.events.CyShutdownEvent;
 import org.cytoscape.application.events.CyShutdownListener;
 
@@ -69,7 +75,7 @@ import org.cytoscape.commandDialog.internal.handlers.MessageHandler;
 import org.cytoscape.util.swing.LookAndFeelUtil;
 
 @SuppressWarnings("serial")
-public class CommandToolDialog extends JDialog implements ActionListener,CyShutdownListener {
+public class CommandToolDialog extends JPanel implements CytoPanelComponent2,ActionListener,CyShutdownListener {
 
 	private static final String NEXT = "next";
 	private static final String PREVIOUS = "previous";
@@ -86,9 +92,8 @@ public class CommandToolDialog extends JDialog implements ActionListener,CyShutd
 	public int MAX_SAVED_COMMANDS = 500;
 	final Logger logger;
 
-	public CommandToolDialog (final Frame parent, final CommandHandler commandHandler, 
+	public CommandToolDialog (final CommandHandler commandHandler, 
 	                          final CyApplicationConfiguration appConfig) {
-		super(parent, false);
 		commandList = new ArrayList<>();
 		logger = Logger.getLogger(CyUserLog.NAME);
 		this.commandHandler = commandHandler;
@@ -99,7 +104,28 @@ public class CommandToolDialog extends JDialog implements ActionListener,CyShutd
 		}
 
 		initComponents();
+		// setBorder(new LineBorder(Color.RED, 1));
+		setPreferredSize(new Dimension(800, 80));
 	}
+
+	@Override
+	public String getIdentifier() {
+		return "CLI";
+	}
+
+	@Override
+	public Component getComponent() {
+		return this;
+	}
+
+	@Override
+	public CytoPanelName getCytoPanelName() { return CytoPanelName.BOTTOM; }
+
+	@Override
+	public Icon getIcon() { return null; }
+
+	@Override
+	public String getTitle() { return "Command Line"; }
 
 	@Override
 	public void setVisible(boolean tf) {
@@ -124,22 +150,24 @@ public class CommandToolDialog extends JDialog implements ActionListener,CyShutd
 	 * Initialize all of the graphical components of the dialog
 	 */
 	private void initComponents() {
-		setTitle("Command Line Dialog");
-		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+		// setTitle("Command Line Dialog");
+		// setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
 		// Create a panel for the main content
-		final JPanel dataPanel = new JPanel();
+		// final JPanel dataPanel = new JPanel();
 
-		final JLabel resultsLabel = new JLabel("Reply Log:");
+		// final JLabel resultsLabel = new JLabel("Log:");
 		final JLabel inputLabel = new JLabel("Command:");
+		inputLabel.setFont(inputLabel.getFont().deriveFont(LookAndFeelUtil.getSmallFontSize()));
 
-		resultsText = new JResultsPane(this, dataPanel);
+		resultsText = new JResultsPane(null, this);
 		resultsText.setEditable(false);
 
 		final JScrollPane scrollPane = new JScrollPane(resultsText);
 		// scrollPane.getVerticalScrollBar().addAdjustmentListener(resultsText);
 		resultsText.setScrollPane(scrollPane); // So we can update the scroll position
 
+		/*
 		// Create the button box
 		final JButton doneButton = new JButton(new AbstractAction("Close") {
 			@Override
@@ -147,6 +175,7 @@ public class CommandToolDialog extends JDialog implements ActionListener,CyShutd
 				dispose();
 			}
 		});
+		*/
 
 		final JButton clearButton = new JButton("Clear");
 		clearButton.setToolTipText("Clear Log");
@@ -154,20 +183,20 @@ public class CommandToolDialog extends JDialog implements ActionListener,CyShutd
 		clearButton.addActionListener(this);
 		clearButton.putClientProperty("JButton.buttonType", "gradient");
 
-		final JPanel buttonBox = LookAndFeelUtil.createOkCancelPanel(null, doneButton);
-		buttonBox.add(clearButton);
-		buttonBox.add(doneButton);
+		// final JPanel buttonBox = LookAndFeelUtil.createOkCancelPanel(null, doneButton);
+		// buttonBox.add(clearButton);
+		// buttonBox.add(doneButton);
 
-		final GroupLayout layout = new GroupLayout(dataPanel);
-		dataPanel.setLayout(layout);
-		layout.setAutoCreateContainerGaps(true);
-		layout.setAutoCreateGaps(true);
+		final GroupLayout layout = new GroupLayout(this);
+		this.setLayout(layout);
+		layout.setAutoCreateContainerGaps(false);
+		layout.setAutoCreateGaps(false);
 
 		layout.setHorizontalGroup(layout.createParallelGroup(Alignment.CENTER, true)
 				.addGroup(layout.createSequentialGroup()
 						.addGroup(layout.createParallelGroup(Alignment.TRAILING, false)
-								.addComponent(resultsLabel)
-								.addComponent(clearButton, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
+								// .addComponent(resultsLabel)
+								//.addComponent(clearButton, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
 								.addComponent(inputLabel)
 						)
 						.addGroup(layout.createParallelGroup(Alignment.LEADING, true)
@@ -175,27 +204,27 @@ public class CommandToolDialog extends JDialog implements ActionListener,CyShutd
 								.addComponent(getInputField(), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
 						)
 				)
-				.addComponent(buttonBox, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+			//	.addComponent(buttonBox, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
 		);
 		layout.setVerticalGroup(layout.createSequentialGroup()
 				.addGroup(layout.createParallelGroup(Alignment.LEADING, true)
 						.addGroup(layout.createSequentialGroup()
-								.addComponent(resultsLabel, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
-								.addGap(1, 1, Short.MAX_VALUE)
-								.addComponent(clearButton, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
+								// .addComponent(resultsLabel, 0, DEFAULT_SIZE, PREFERRED_SIZE)
+								//.addGap(0, 0, Short.MAX_VALUE)
+								//.addComponent(clearButton, 0, DEFAULT_SIZE, PREFERRED_SIZE)
 						)
-						.addComponent(scrollPane, DEFAULT_SIZE, 580, Short.MAX_VALUE)
+						.addComponent(scrollPane, 0, 580, Short.MAX_VALUE)
 				)
 				.addGroup(layout.createParallelGroup(Alignment.CENTER, false)
 						.addComponent(inputLabel, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
 						.addComponent(getInputField(), PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
 				)
-				.addComponent(buttonBox, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
+			//	.addComponent(buttonBox, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
 		);
 
-		setContentPane(dataPanel);
-		LookAndFeelUtil.setDefaultOkCancelKeyStrokes(getRootPane(), null, doneButton.getAction());
-		pack();
+		// setContentPane(dataPanel);
+		// LookAndFeelUtil.setDefaultOkCancelKeyStrokes(getRootPane(), null, doneButton.getAction());
+		// pack();
 	}
 
 	/**
@@ -263,6 +292,7 @@ public class CommandToolDialog extends JDialog implements ActionListener,CyShutd
 	private JTextField getInputField() {
 		if (inputField == null) {
 			inputField = new JTextField();
+			inputField.setFont(inputField.getFont().deriveFont(LookAndFeelUtil.getSmallFontSize()));
 
 			// Set up our up-arrow/down-arrow actions
 			final Action previousAction = new LineAction(PREVIOUS);

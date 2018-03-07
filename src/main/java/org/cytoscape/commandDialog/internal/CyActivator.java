@@ -34,12 +34,17 @@ import org.cytoscape.app.event.AppsFinishedStartingListener;
 import org.cytoscape.application.CyApplicationConfiguration;
 import org.cytoscape.application.events.CyShutdownListener;
 import org.cytoscape.application.swing.CySwingApplication;
+import org.cytoscape.application.swing.CytoPanel;
+import org.cytoscape.application.swing.CytoPanelComponent;
+import org.cytoscape.application.swing.CytoPanelName;
+import org.cytoscape.application.swing.CytoPanelState;
 import org.cytoscape.application.CyShutdown;
 import org.cytoscape.application.CyUserLog;
 import org.cytoscape.command.AvailableCommands;
 import org.cytoscape.command.CommandExecutorTaskFactory;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.service.util.AbstractCyActivator;
+import org.cytoscape.service.util.CyServiceRegistrar;
 import org.cytoscape.work.SynchronousTaskManager;
 import org.cytoscape.work.TaskFactory;
 import org.osgi.framework.BundleContext;
@@ -50,8 +55,8 @@ import org.ops4j.pax.logging.spi.PaxAppender;
 
 
 public class CyActivator extends AbstractCyActivator {
-	private static Logger logger = LoggerFactory
-			.getLogger(org.cytoscape.commandDialog.internal.CyActivator.class);
+	// private static Logger logger = LoggerFactory
+	// 		.getLogger(org.cytoscape.commandDialog.internal.CyActivator.class);
 
 	public CyActivator() {
 		super();
@@ -69,6 +74,7 @@ public class CyActivator extends AbstractCyActivator {
 		// See if we have a graphics console or not
 		boolean haveGUI = true;
 		ServiceReference ref = bc.getServiceReference(CySwingApplication.class.getName());
+		System.out.println("Command line dialog start");
 
 		if (ref == null) {
 			haveGUI = false;
@@ -80,15 +86,22 @@ public class CyActivator extends AbstractCyActivator {
 		SynchronousTaskManager taskManager = getService(bc, SynchronousTaskManager.class);
 		CommandHandler commandHandler = new CommandHandler(availableCommands, commandExecutor, taskManager);
 		CyApplicationConfiguration appConfig = getService(bc, CyApplicationConfiguration.class);
+		CyServiceRegistrar serviceRegistrar = getService(bc, CyServiceRegistrar.class);
 		final CommandToolDialog dialog;
 
+		/*
 		// Register ourselves as a listener for CyUserMessage logs
 		registerService(bc, commandHandler, PaxAppender.class, 
 		                ezProps("org.ops4j.pax.logging.appender.name", 
 		                        "TaskMonitorShowMessagesAppender"));
+		*/
+		registerService(bc, commandHandler, PaxAppender.class,
+		                ezProps("org.ops4j.pax.logging.appender.name",
+		                "CyUserLog"));
 
 		// And register ourselves as a listener for userlog handlers
-		LogManager.getLogManager().getLogger(CyUserLog.NAME).addHandler(commandHandler);
+		// FIXME
+		// LogManager.getLogManager().getLogger(CyUserLog.NAME).addHandler(commandHandler);
 
 		// Get any command line arguments.  The "-S" and "-R" are ours
 		CyProperty<Properties> commandLineProps = getService(bc, CyProperty.class, "(cyPropertyName=commandline.props)");
@@ -102,9 +115,12 @@ public class CyActivator extends AbstractCyActivator {
 		if (haveGUI) {
 			CySwingApplication swingApp = (CySwingApplication) getService(bc, CySwingApplication.class);
 			// Create our dialog -- we only want one of these instantiated
-			dialog = new CommandToolDialog(swingApp.getJFrame(), commandHandler, appConfig);
+			dialog = new CommandToolDialog(commandHandler, appConfig);
 			registerService(bc, dialog, CyShutdownListener.class, new Properties());
+			registerService(bc, dialog, CytoPanelComponent.class, new Properties());
+			CytoPanel cytoPanel = swingApp.getCytoPanel(CytoPanelName.BOTTOM);
 
+			/*
 			// Menu task factories
 			TaskFactory commandDialog = new CommandDialogTaskFactory(dialog);
 			Properties commandDialogProps = new Properties();
@@ -122,6 +138,7 @@ public class CyActivator extends AbstractCyActivator {
 			commandDialogProps.setProperty(COMMAND_EXAMPLE_JSON, "{}");
 
 			registerService(bc, commandDialog, TaskFactory.class, commandDialogProps);
+			*/
 
 			TaskFactory pauseCommand = new PauseCommandTaskFactory(swingApp.getJFrame());
 			Properties pauseProperties = new Properties();
@@ -135,6 +152,7 @@ public class CyActivator extends AbstractCyActivator {
 			pauseProperties.setProperty(COMMAND_SUPPORTS_JSON, "true");
 			pauseProperties.setProperty(COMMAND_EXAMPLE_JSON, "{}");
 			registerService(bc, pauseCommand, TaskFactory.class, pauseProperties);
+
 		} else {
 			dialog = null;
 		}

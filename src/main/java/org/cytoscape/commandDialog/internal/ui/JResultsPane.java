@@ -154,7 +154,8 @@ public class JResultsPane extends JTextPane implements MessageHandler {
 
 			// Force (I mean, *really* force) the dialog to repaint.
 			paintImmediately(getBounds());
-			parentDialog.revalidate();
+			if (parentDialog != null)
+				parentDialog.revalidate();
 			dataPanel.paintImmediately(dataPanel.getBounds());
 		} catch (Exception e) {
 			logger.error("Unable to update command result in the dialog.", e);
